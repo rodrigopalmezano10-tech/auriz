@@ -1,13 +1,17 @@
 /* eslint-disable */
 const NAV_ITEMS = [
-  { id:'hoje',       label:'Hoje',          icon:'Home' },
-  { id:'transacoes', label:'Transações',    icon:'CreditCard' },
-  { id:'dashboard',  label:'Dashboard',     icon:'LayoutDashboard' },
-  { id:'economias',  label:'Economias',     icon:'PiggyBank' },
-  { id:'metas',      label:'Metas',         icon:'Target' },
-  { id:'categorias', label:'Categorias',    icon:'Tag' },
-  { id:'teto',       label:'Teto de gastos',icon:'TrendingUp' },
-  { id:'membros',    label:'Membros',       icon:'Users' },
+  { id:'hoje',       label:'Hoje',           icon:'Home' },
+  { id:'transacoes', label:'Transações',     icon:'CreditCard' },
+  { id:'dashboard',  label:'Dashboard',      icon:'LayoutDashboard' },
+  { id:'economias',  label:'Economias',      icon:'PiggyBank' },
+  { id:'metas',      label:'Metas',          icon:'Target' },
+  { id:'categorias', label:'Categorias',     icon:'Tag' },
+  { id:'teto',       label:'Teto de gastos', icon:'TrendingUp' },
+  { id:'membros',    label:'Membros',        icon:'Users' },
+];
+
+const NAV_ADMIN = [
+  { id:'usuarios', label:'Usuários', icon:'ShieldCheck' },
 ];
 
 const Sidebar = ({ active, onNav, members=[], onLogout }) => {
@@ -34,7 +38,7 @@ const Sidebar = ({ active, onNav, members=[], onLogout }) => {
         </div>
       </div>
 
-      {/* Nav */}
+      {/* Nav principal */}
       <nav style={{ flex:1, display:'flex', flexDirection:'column', gap:2 }}>
         {NAV_ITEMS.map(item => {
           const isActive = active===item.id;
@@ -62,8 +66,36 @@ const Sidebar = ({ active, onNav, members=[], onLogout }) => {
         })}
       </nav>
 
+      {/* Nav admin */}
+      <div style={{ margin:'10px 0 4px' }}>
+        <div className="a-overline" style={{ marginBottom:6, padding:'0 12px', fontSize:10 }}>Admin</div>
+        {NAV_ADMIN.map(item => {
+          const isActive = active===item.id;
+          const IconEl = Icon[item.icon];
+          return (
+            <button key={item.id} onClick={()=>onNav(item.id)} style={{
+              display:'flex', alignItems:'center', gap:11, padding:'9px 12px', width:'100%',
+              background:isActive?'var(--auriz-gold-soft)':'transparent',
+              border:'1px solid', borderColor:isActive?'var(--auriz-gold)':'transparent',
+              borderRadius:'var(--r-2)', fontFamily:'var(--font-sans)',
+              fontWeight:isActive?500:400, fontSize:14,
+              color:isActive?'var(--auriz-gold-deep)':'var(--ink-2)',
+              cursor:'pointer', textAlign:'left',
+              transition:'all var(--dur-base) var(--ease-out)',
+            }}
+            onMouseEnter={e=>{ if(!isActive) e.currentTarget.style.background='var(--auriz-gold-soft)'; }}
+            onMouseLeave={e=>{ if(!isActive) e.currentTarget.style.background='transparent'; }}>
+              <span style={{ color:isActive?'var(--auriz-gold-deep)':'var(--ink-3)', display:'flex' }}>
+                <IconEl size={17}/>
+              </span>
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Footer */}
-      <div style={{ padding:'12px 4px 0', borderTop:'1px solid var(--hairline-soft)', marginTop:12 }}>
+      <div style={{ padding:'12px 4px 0', borderTop:'1px solid var(--hairline-soft)', marginTop:8 }}>
         <button style={{ display:'flex', alignItems:'center', gap:10, width:'100%',
           padding:'9px 10px', background:'var(--auriz-gold-soft)',
           border:'1px solid var(--auriz-gold)', borderRadius:'var(--r-2)',
