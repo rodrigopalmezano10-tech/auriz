@@ -101,6 +101,25 @@ const DB = {
   async getMonthlySpending(familyId, month, year) { const { data } = await sb.from('v_monthly_spending').select('*').eq('family_id', familyId).eq('month', month).eq('year', year).order('total_spent', { ascending: false }); return data ?? []; },
   async getMemberBalances(familyId, month, year) { const { data } = await sb.from('v_member_balances').select('*').eq('family_id', familyId).eq('month', month).eq('year', year); return data ?? []; },
   async getSpendingHistory(familyId, months=6) { const { data } = await sb.from('v_monthly_spending').select('year, month, total_spent, total_income').eq('family_id', familyId).order('year', { ascending: false }).order('month', { ascending: false }).limit(months*15); return data ?? []; },
+
+  // ── Admin: Usuários & Acesso ──────────────────────────────────
+  async createUserAndLink(email, password, memberId, isAdmin=false) {
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) throw error;
+    const userId = data.user?.id;
+    if (!userId) throw new Error('Usuário criado mas ID não retornado. Verifique a confirmação de e-mail.');
+    const { error: ue } = await sb.from('members').update({ user_id: userId, is_admin: isAdmin }).eq('id', memberId);
+    if (ue) throw ue;
+    return data;
+  },
+  async setAdminStatus(memberId, isAdmin) {
+    const { error } = await sb.from('members').update({ is_admin: isAdmin }).eq('id', memberId);
+    if (error) throw error;
+  },
+  async unlinkMember(memberId) {
+    const { error } = await sb.from('members').update({ user_id: null, is_admin: false }).eq('id', memberId);
+    if (error) throw error;
+  },
 };
 
 window.DB = DB;
