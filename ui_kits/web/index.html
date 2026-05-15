@@ -39,6 +39,7 @@
   <script type="text/babel" src="./TetoScreen.jsx"></script>
   <script type="text/babel" src="./MembrosScreen.jsx"></script>
   <script type="text/babel" src="./DashboardAnalyticsScreen.jsx"></script>
+  <script type="text/babel" src="./AdminUsuariosScreen.jsx"></script>
   <script type="text/babel" data-presets="env,react">
     const AppLoading = () => (
       <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:20}}>
@@ -76,14 +77,15 @@
       if (loading) return <AppLoading/>;
 
       const titles = {
-        hoje:      {title:"Hoje",         subtitle:`${MONTHS_PT[month]} · ${new Date().toLocaleDateString("pt-BR",{weekday:"long"})}`.toLowerCase()},
-        transacoes:{title:"Transações",   subtitle:`tudo o que entrou e saiu em ${MONTHS_PT[month].toLowerCase()}`},
-        dashboard: {title:"Dashboard",    subtitle:"indicadores e padrões do mês"},
-        economias: {title:"Economias",    subtitle:"o que vocês têm guardado"},
-        metas:     {title:"Metas",        subtitle:"os planos da família"},
-        categorias:{title:"Categorias",   subtitle:"como vocês organizam o gasto"},
-        teto:      {title:"Teto de gastos",subtitle:"limites por categoria"},
-        membros:   {title:"Membros",      subtitle:"quem participa do orçamento"},
+        hoje:      {title:"Hoje",           subtitle:`${MONTHS_PT[month]} · ${new Date().toLocaleDateString("pt-BR",{weekday:"long"})}`.toLowerCase()},
+        transacoes:{title:"Transações",     subtitle:`tudo o que entrou e saiu em ${MONTHS_PT[month].toLowerCase()}`},
+        dashboard: {title:"Dashboard",      subtitle:"indicadores e padrões do mês"},
+        economias: {title:"Economias",      subtitle:"o que vocês têm guardado"},
+        metas:     {title:"Metas",          subtitle:"os planos da família"},
+        categorias:{title:"Categorias",     subtitle:"como vocês organizam o gasto"},
+        teto:      {title:"Teto de gastos", subtitle:"limites por categoria"},
+        membros:   {title:"Membros",        subtitle:"quem participa do orçamento"},
+        usuarios:  {title:"Usuários",       subtitle:"acesso e permissões do painel"},
       };
 
       const p = {familyId:FAMILY_ID, month, year};
@@ -97,6 +99,7 @@
           case "categorias": return <CategoriasScreen familyId={FAMILY_ID}/>;
           case "teto":       return <TetoScreen {...p}/>;
           case "membros":    return <MembrosScreen {...p} onMembersChange={refreshFamily}/>;
+          case "usuarios":   return <AdminUsuariosScreen familyId={FAMILY_ID} members={members} onMembersChange={refreshFamily}/>;
           default:           return null;
         }
       };
