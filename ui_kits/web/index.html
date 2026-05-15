@@ -6,24 +6,81 @@
   <title>Auriz — finanças da família</title>
   <link rel="stylesheet" href="./colors_and_type.css">
   <style>
-    html,body,#root{height:100%;margin:0}
-    body{background:var(--paper);font-family:var(--font-sans);color:var(--ink);-webkit-font-smoothing:antialiased}
-    *{box-sizing:border-box}
-    button{font-family:inherit}
-    [data-screen-label]{isolation:isolate}
+    html,body,#root { height:100%; margin:0; }
+    body { background:#faf8f4; font-family:system-ui,sans-serif; color:#1a1410; -webkit-font-smoothing:antialiased; }
+    * { box-sizing:border-box; }
+    button { font-family:inherit; }
+    [data-screen-label] { isolation:isolate; }
+
+    /* Spinner puro CSS — visível antes do React carregar */
+    #boot-loader {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:20px;
+      background:#faf8f4; z-index:9999;
+    }
+    #boot-loader .wordmark {
+      font-family:system-ui,sans-serif; font-size:32px; font-weight:600;
+      letter-spacing:-0.04em; color:#1a1410;
+    }
+    #boot-loader .dot { color:#c89b5c; }
+    #boot-loader .ring {
+      width:24px; height:24px; border:2px solid #e8e0d4;
+      border-top-color:#c89b5c; border-radius:50%;
+      animation:spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #boot-loader.hidden { display:none; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-  <script src="./config.js"></script>
-  <script src="./supabase.js"></script>
-  <script>
-    window.MONTHS_PT=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-  </script>
 </head>
 <body>
+
+  <!-- Loader visível imediatamente, antes do React/Babel carregar -->
+  <div id="boot-loader">
+    <div class="wordmark">auriz<span class="dot">.</span></div>
+    <div class="ring"></div>
+  </div>
+
   <div id="root"></div>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- React 18 -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+
+  <!-- Babel (precisa de 'unsafe-eval' no CSP) -->
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+  <!-- Config + Supabase client -->
+  <script src="./config.js"></script>
+  <script src="./supabase.js"></script>
+
+  <script>
+    window.MONTHS_PT = ["janeiro","fevereiro","março","abril","maio","junho",
+      "julho","agosto","setembro","outubro","novembro","dezembro"];
+
+    // Esconde o boot-loader nativo assim que o React assumir
+    window.__hideBoot = function() {
+      var el = document.getElementById('boot-loader');
+      if (el) el.classList.add('hidden');
+    };
+
+    // Se o Babel/React não carregar em 8s, mostra mensagem de erro
+    setTimeout(function() {
+      var root = document.getElementById('root');
+      if (root && !root.hasChildNodes()) {
+        document.getElementById('boot-loader').innerHTML =
+          '<div style="text-align:center;padding:32px;max-width:440px">' +
+          '<div style="font-size:24px;font-weight:600;margin-bottom:12px">auriz</div>' +
+          '<p style="color:#6b6560;font-size:15px;line-height:1.6;margin:0 0 16px">' +
+          'Erro ao carregar o app. Tente um <strong>Ctrl+Shift+R</strong> (ou Cmd+Shift+R no Mac) ' +
+          'para limpar o cache e recarregar.</p>' +
+          '<p style="color:#a09890;font-size:13px">Se o problema persistir, verifique o console do navegador (F12).</p>' +
+          '</div>';
+      }
+    }, 8000);
+  </script>
 
   <!-- Camada de dados -->
   <script type="text/babel" src="./db.jsx"></script>
@@ -54,32 +111,52 @@
 
   <script type="text/babel" data-presets="env,react">
 
-    // ── Loading splash ────────────────────────────────────────────
-    const AppLoading = () => (
-      <div style={{
-        height:"100vh", display:"flex", alignItems:"center",
-        justifyContent:"center", flexDirection:"column", gap:20,
-        background:"var(--paper)",
-      }}>
-        <Logo height={32}/>
-        <Spinner size={22}/>
-      </div>
-    );
+    // ── Loading splash React ──────────────────────────────────────
+    const AppLoading = () => {
+      React.useEffect(() => { window.__hideBoot && window.__hideBoot(); }, []);
+      return (
+        <div style={{ height:"100vh", display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center", gap:20, background:"var(--paper)" }}>
+          <Logo height={32}/>
+          <Spinner size={22}/>
+        </div>
+      );
+    };
 
-    // ── App root ──────────────────────────────────────────────────
+    // ── Tela de erro ──────────────────────────────────────────────
+    const AppError = ({ message }) => {
+      React.useEffect(() => { window.__hideBoot && window.__hideBoot(); }, []);
+      return (
+        <div style={{ height:"100vh", display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center", gap:16, padding:32,
+          background:"var(--paper)", textAlign:"center" }}>
+          <Logo height={28}/>
+          <div style={{ fontSize:15, color:"var(--ink-3)", maxWidth:400, lineHeight:1.6 }}>
+            {message || "Erro inesperado. Recarregue a página."}
+          </div>
+          <button onClick={() => window.location.reload()} style={{
+            padding:"10px 24px", background:"var(--ink)", color:"var(--paper)",
+            border:"none", borderRadius:"var(--r-2)", cursor:"pointer",
+            fontFamily:"var(--font-sans)", fontWeight:500, fontSize:14,
+          }}>Recarregar</button>
+        </div>
+      );
+    };
+
+    // ── App principal ─────────────────────────────────────────────
     function App() {
-      // auth: "loading" | "guest" | "setup" | "app"
-      const [authState,    setAuthState]    = React.useState("loading");
-      const [session,      setSession]      = React.useState(null);
-      const [family,       setFamily]       = React.useState(null);
-      const [members,      setMembers]      = React.useState([]);
-      const [categories,   setCategories]   = React.useState([]);
-      const [active,       setActive]       = React.useState("hoje");
-      const [month,        setMonth]        = React.useState(new Date().getMonth());
-      const [year,         setYear]         = React.useState(new Date().getFullYear());
-      const [sheetOpen,    setSheetOpen]    = React.useState(false);
+      // "loading" | "guest" | "setup" | "app" | "error"
+      const [authState,  setAuthState]  = React.useState("loading");
+      const [session,    setSession]    = React.useState(null);
+      const [family,     setFamily]     = React.useState(null);
+      const [members,    setMembers]    = React.useState([]);
+      const [categories, setCategories] = React.useState([]);
+      const [active,     setActive]     = React.useState("hoje");
+      const [month,      setMonth]      = React.useState(new Date().getMonth());
+      const [year,       setYear]       = React.useState(new Date().getFullYear());
+      const [sheetOpen,  setSheetOpen]  = React.useState(false);
+      const [bootError,  setBootError]  = React.useState(null);
 
-      // ── Carrega família e dados base do usuário ─────────────────
       const loadFamily = React.useCallback(async (userId) => {
         try {
           const fam = await DB.getFamilyByUserId(userId);
@@ -92,47 +169,69 @@
           setMembers(m);
           setCategories(c);
           setAuthState("app");
-        } catch {
+        } catch(e) {
+          console.error("loadFamily error:", e);
           setAuthState("setup");
         }
       }, []);
 
-      // ── Bootstrap: verifica sessão ao montar ────────────────────
       React.useEffect(() => {
-        DB.getSession().then(sess => {
-          if (!sess) { setAuthState("guest"); return; }
-          setSession(sess);
-          loadFamily(sess.user.id);
-        });
+        let cancelled = false;
 
-        // Ouve mudanças de auth (login / logout / token refresh)
-        const { data: { subscription } } = sb.auth.onAuthStateChange((event, sess) => {
-          if (event === "SIGNED_OUT") {
-            setAuthState("guest");
-            setSession(null);
-            setFamily(null);
-            setMembers([]);
-            setCategories([]);
-            setActive("hoje");
-          } else if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && sess) {
+        DB.getSession()
+          .then(sess => {
+            if (cancelled) return;
+            if (!sess) { setAuthState("guest"); return; }
             setSession(sess);
             loadFamily(sess.user.id);
-          }
-        });
+          })
+          .catch(e => {
+            console.error("getSession error:", e);
+            if (!cancelled) setAuthState("guest");
+          });
 
-        return () => subscription.unsubscribe();
+        let subscription;
+        try {
+          const result = sb.auth.onAuthStateChange((event, sess) => {
+            if (cancelled) return;
+            if (event === "SIGNED_OUT") {
+              setAuthState("guest");
+              setSession(null);
+              setFamily(null);
+              setMembers([]);
+              setCategories([]);
+              setActive("hoje");
+            } else if (event === "SIGNED_IN" && sess) {
+              setSession(sess);
+              loadFamily(sess.user.id);
+            } else if (event === "TOKEN_REFRESHED" && sess) {
+              setSession(sess);
+            }
+          });
+          subscription = result.data.subscription;
+        } catch(e) {
+          console.error("onAuthStateChange setup error:", e);
+        }
+
+        return () => {
+          cancelled = true;
+          subscription && subscription.unsubscribe();
+        };
       }, [loadFamily]);
 
-      // ── Atualiza lista de membros e categorias ──────────────────
+      // Esconde boot loader nativo quando React assume
+      React.useEffect(() => { window.__hideBoot && window.__hideBoot(); }, []);
+
       const refreshFamily = () => {
         if (!family) return;
         Promise.all([DB.getMembers(family.id), DB.getCategories(family.id)])
-          .then(([m, c]) => { setMembers(m); setCategories(c); });
+          .then(([m, c]) => { setMembers(m); setCategories(c); })
+          .catch(e => console.error("refreshFamily error:", e));
       };
 
       const handleLogout = async () => {
-        await DB.signOut();
-        // onAuthStateChange cuida do redirect
+        try { await DB.signOut(); }
+        catch(e) { console.error("signOut error:", e); }
       };
 
       const shiftMonth = (delta) => setMonth(prev => {
@@ -142,21 +241,13 @@
         return m;
       });
 
-      // ── Estados de auth ─────────────────────────────────────────
+      if (bootError)          return <AppError message={bootError}/>;
       if (authState === "loading") return <AppLoading/>;
+      if (authState === "guest")   return <LoginScreen onLogin={() => {}}/>;
+      if (authState === "setup")   return (
+        <SetupScreen userId={session?.user?.id} onDone={() => loadFamily(session.user.id)}/>
+      );
 
-      if (authState === "guest")
-        return <LoginScreen onLogin={() => {/* onAuthStateChange redireciona */}/>;
-
-      if (authState === "setup")
-        return (
-          <SetupScreen
-            userId={session?.user?.id}
-            onDone={() => loadFamily(session.user.id)}
-          />
-        );
-
-      // authState === "app"
       const FAMILY_ID = family.id;
 
       const titles = {
@@ -191,12 +282,7 @@
       return (
         <div style={{ display:"flex", minHeight:"100vh" }}
           data-screen-label={`Auriz · ${titles[active]?.title || active}`}>
-          <Sidebar
-            active={active}
-            onNav={setActive}
-            members={members}
-            onLogout={handleLogout}
-          />
+          <Sidebar active={active} onNav={setActive} members={members} onLogout={handleLogout}/>
           <main style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
             <TopBar
               title={titles[active]?.title || ""}
@@ -207,11 +293,8 @@
             <div style={{ flex:1 }}>{renderScreen()}</div>
           </main>
           <AddTransactionSheet
-            open={sheetOpen}
-            onClose={()=>setSheetOpen(false)}
-            familyId={FAMILY_ID}
-            members={members}
-            categories={categories}
+            open={sheetOpen} onClose={()=>setSheetOpen(false)}
+            familyId={FAMILY_ID} members={members} categories={categories}
             onSaved={()=>setSheetOpen(false)}
           />
         </div>
@@ -219,6 +302,7 @@
     }
 
     ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+
   </script>
 </body>
 </html>
