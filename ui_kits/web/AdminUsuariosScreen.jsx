@@ -109,7 +109,7 @@ const CriarUsuarioModal = ({ membersUnlinked, onClose, onSaved, onError }) => {
   };
 
   return (
-    <Modal title="Criar novo usuário" onClose={onClose}>
+    <Modal title="Criar novo usuário" open={true} onClose={onClose}>
       <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:18 }}>
 
         <div>
@@ -177,9 +177,9 @@ const CriarUsuarioModal = ({ membersUnlinked, onClose, onSaved, onError }) => {
 
 // ── Tela principal ─────────────────────────────────────────────
 const AdminUsuariosScreen = ({ familyId, members, onMembersChange }) => {
-  const [showModal,   setShowModal]   = React.useState(false);
-  const [rowLoading,  setRowLoading]  = React.useState(null);
-  const { toasts, addToast, removeToast } = useToast();
+  const [showModal,  setShowModal]  = React.useState(false);
+  const [rowLoading, setRowLoading] = React.useState(null);
+  const toast = useToast();  // retorna { show, el }
 
   const membersUnlinked = members.filter(m => !m.user_id);
   const adminCount      = members.filter(m => m.is_admin).length;
@@ -188,10 +188,10 @@ const AdminUsuariosScreen = ({ familyId, members, onMembersChange }) => {
     setRowLoading(member.id);
     try {
       await DB.setAdminStatus(member.id, isAdmin);
-      addToast({ message: isAdmin ? `${member.name} agora é administrador` : `${member.name} removido dos administradores`, variant:'success' });
+      toast.show(isAdmin ? `${member.name} agora é administrador` : `${member.name} removido dos administradores`);
       onMembersChange();
     } catch (err) {
-      addToast({ message: err.message ?? 'Erro ao atualizar permissão.', variant:'error' });
+      toast.show(err.message ?? 'Erro ao atualizar permissão.', 'error');
     } finally { setRowLoading(null); }
   };
 
@@ -200,20 +200,17 @@ const AdminUsuariosScreen = ({ familyId, members, onMembersChange }) => {
     setRowLoading(member.id);
     try {
       await DB.unlinkMember(member.id);
-      addToast({ message:`Conta de ${member.name} desvinculada.`, variant:'info' });
+      toast.show(`Conta de ${member.name} desvinculada.`);
       onMembersChange();
     } catch (err) {
-      addToast({ message: err.message ?? 'Erro ao desvincular.', variant:'error' });
+      toast.show(err.message ?? 'Erro ao desvincular.', 'error');
     } finally { setRowLoading(null); }
   };
 
   return (
     <div style={{ padding:'28px 32px', maxWidth:840 }}>
 
-      {/* Toasts */}
-      <div style={{ position:'fixed', bottom:24, right:24, zIndex:9999, display:'flex', flexDirection:'column', gap:8 }}>
-        {toasts.map(t => <Toast key={t.id} {...t} onClose={removeToast}/>)}
-      </div>
+      {toast.el}
 
       {/* Header */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:28, gap:24 }}>
@@ -253,22 +250,25 @@ const AdminUsuariosScreen = ({ familyId, members, onMembersChange }) => {
           { label:'Total de membros',  value:members.length,                         icon:'Users'       },
           { label:'Com conta ativa',   value:members.filter(m=>m.user_id).length,    icon:'UserCheck'   },
           { label:'Administradores',   value:adminCount,                              icon:'ShieldCheck' },
-        ].map(s => (
-          <div key={s.label} style={{ padding:'16px 20px', background:'var(--surface)', border:'1px solid var(--hairline)', borderRadius:'var(--r-3)' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-              {React.createElement(Icon[s.icon], { size:15, style:{ color:'var(--ink-3)' } })}
-              <span className="a-caption" style={{ color:'var(--ink-3)' }}>{s.label}</span>
+        ].map(s => {
+          const IconEl = Icon[s.icon];
+          return (
+            <div key={s.label} style={{ padding:'16px 20px', background:'var(--surface)', border:'1px solid var(--hairline)', borderRadius:'var(--r-3)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+                {IconEl && <IconEl size={15} style={{ color:'var(--ink-3)' }}/>}
+                <span className="a-caption" style={{ color:'var(--ink-3)' }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize:28, fontWeight:600, fontFamily:'var(--font-display)', color:'var(--ink)', lineHeight:1 }}>{s.value}</div>
             </div>
-            <div style={{ fontSize:28, fontWeight:600, fontFamily:'var(--font-display)', color:'var(--ink)', lineHeight:1 }}>{s.value}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* List */}
       <div style={{ marginBottom:12 }}><SectionHeader title="Membros da família"/></div>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         {members.length === 0 && (
-          <EmptyState icon="Users" title="Nenhum membro" subtitle="Adicione membros na tela Membros primeiro."/>
+          <EmptyState icon="Users" title="Nenhum membro" description="Adicione membros na tela Membros primeiro."/>
         )}
         {members.map(m => (
           <MemberUserRow key={m.id} member={m} loading={rowLoading===m.id}
@@ -293,8 +293,8 @@ const AdminUsuariosScreen = ({ familyId, members, onMembersChange }) => {
         <CriarUsuarioModal
           membersUnlinked={membersUnlinked}
           onClose={()=>setShowModal(false)}
-          onSaved={()=>{ setShowModal(false); addToast({message:'Usuário criado com sucesso!',variant:'success'}); onMembersChange(); }}
-          onError={(msg)=>addToast({message:msg,variant:'error'})}
+          onSaved={()=>{ setShowModal(false); toast.show('Usuário criado com sucesso!'); onMembersChange(); }}
+          onError={(msg)=>toast.show(msg, 'error')}
         />
       )}
     </div>
