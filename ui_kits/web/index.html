@@ -155,7 +155,6 @@
       const [month,      setMonth]      = React.useState(new Date().getMonth());
       const [year,       setYear]       = React.useState(new Date().getFullYear());
       const [sheetOpen,  setSheetOpen]  = React.useState(false);
-      const [bootError,  setBootError]  = React.useState(null);
 
       const loadFamily = React.useCallback(async (userId) => {
         try {
@@ -241,7 +240,6 @@
         return m;
       });
 
-      if (bootError)          return <AppError message={bootError}/>;
       if (authState === "loading") return <AppLoading/>;
       if (authState === "guest")   return <LoginScreen onLogin={() => {}}/>;
       if (authState === "setup")   return (
@@ -282,13 +280,20 @@
       return (
         <div style={{ display:"flex", minHeight:"100vh" }}
           data-screen-label={`Auriz · ${titles[active]?.title || active}`}>
-          <Sidebar active={active} onNav={setActive} members={members} onLogout={handleLogout}/>
+          <Sidebar
+            active={active}
+            onNav={setActive}
+            members={members}
+            onLogout={handleLogout}
+            session={session}
+          />
           <main style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
             <TopBar
               title={titles[active]?.title || ""}
               subtitle={titles[active]?.subtitle || ""}
               month={month} year={year} onMonth={shiftMonth}
               onAddTransaction={()=>setSheetOpen(true)}
+              familyId={FAMILY_ID}
             />
             <div style={{ flex:1 }}>{renderScreen()}</div>
           </main>
