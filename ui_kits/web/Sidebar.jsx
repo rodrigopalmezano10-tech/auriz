@@ -14,9 +14,11 @@ const NAV_ADMIN = [
   { id:'usuarios', label:'Usuários', icon:'ShieldCheck' },
 ];
 
-const Sidebar = ({ active, onNav, members=[], onLogout }) => {
+const Sidebar = ({ active, onNav, members=[], onLogout, session }) => {
   const [viewMember, setViewMember] = React.useState('all');
-  const first = members[0];
+
+  // Sempre mostra o membro vinculado ao usuário logado — imune a remoções de outros membros
+  const currentMember = members.find(m => m.user_id === session?.user?.id) ?? members[0];
 
   return (
     <aside style={{ width:248, background:'var(--paper)', borderRight:'1px solid var(--hairline)',
@@ -42,7 +44,7 @@ const Sidebar = ({ active, onNav, members=[], onLogout }) => {
       <nav style={{ flex:1, display:'flex', flexDirection:'column', gap:2 }}>
         {NAV_ITEMS.map(item => {
           const isActive = active===item.id;
-          const IconEl = Icon[item.icon];
+          const IconEl = Icon[item.icon] ?? Icon.Settings;
           return (
             <button key={item.id} onClick={()=>onNav(item.id)} style={{
               display:'flex', alignItems:'center', gap:11, padding:'9px 12px',
@@ -71,7 +73,7 @@ const Sidebar = ({ active, onNav, members=[], onLogout }) => {
         <div className="a-overline" style={{ marginBottom:6, padding:'0 12px', fontSize:10 }}>Admin</div>
         {NAV_ADMIN.map(item => {
           const isActive = active===item.id;
-          const IconEl = Icon[item.icon];
+          const IconEl = Icon[item.icon] ?? Icon.Settings;
           return (
             <button key={item.id} onClick={()=>onNav(item.id)} style={{
               display:'flex', alignItems:'center', gap:11, padding:'9px 12px', width:'100%',
@@ -104,19 +106,31 @@ const Sidebar = ({ active, onNav, members=[], onLogout }) => {
           <Icon.Sparkles size={16}/>
           <span>Pergunte ao Auriz</span>
         </button>
-        {first && (
+
+        {currentMember ? (
           <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 6px 0' }}>
-            <Avatar name={first.name} color={first.color} size={32}/>
+            <Avatar name={currentMember.name} color={currentMember.color ?? 'gold'} size={32}/>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13, fontWeight:500, color:'var(--ink)' }}>{first.name.split(' ')[0]}</div>
-              <div style={{ fontSize:11, color:'var(--ink-3)', fontFamily:'var(--font-display)' }}>Minha Família</div>
+              <div style={{ fontSize:13, fontWeight:500, color:'var(--ink)',
+                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {currentMember.name.split(' ')[0]}
+              </div>
+              <div style={{ fontSize:11, color:'var(--ink-3)', fontFamily:'var(--font-display)',
+                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {session?.user?.email ?? 'Minha Família'}
+              </div>
             </div>
             {onLogout && (
               <button onClick={onLogout} style={{ background:'transparent', border:'none',
-                cursor:'pointer', color:'var(--ink-3)', padding:4, display:'flex' }} title="Sair">
+                cursor:'pointer', color:'var(--ink-3)', padding:4, display:'flex', flexShrink:0 }}
+                title="Sair">
                 <Icon.LogOut size={16}/>
               </button>
             )}
+          </div>
+        ) : (
+          <div style={{ padding:'12px 6px 0', fontSize:12, color:'var(--ink-3)' }}>
+            {session?.user?.email}
           </div>
         )}
       </div>
