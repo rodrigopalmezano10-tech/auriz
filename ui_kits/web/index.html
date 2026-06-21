@@ -84,6 +84,10 @@
       const [month, setMonth]         = React.useState(new Date().getMonth());
       const [year, setYear]           = React.useState(new Date().getFullYear());
       const [sheetOpen, setSheetOpen] = React.useState(false);
+      const [editTx, setEditTx]       = React.useState(null);
+
+      const handleEditTransaction = (tx) => { setEditTx(tx); setSheetOpen(true); };
+      const handleSheetClose = () => { setSheetOpen(false); setEditTx(null); };
 
       const init = React.useCallback(async () => {
         setStage("loading");
@@ -145,9 +149,9 @@
         const p = { familyId, month, year };
         switch (active) {
           case "hoje":
-            return <DashboardScreen {...p} members={members} onAddTransaction={() => setSheetOpen(true)} onNav={setActive} />;
+            return <DashboardScreen {...p} members={members} onAddTransaction={() => setSheetOpen(true)} onEditTransaction={handleEditTransaction} onNav={setActive} />;
           case "transacoes":
-            return <TransactionsScreen {...p} members={members} categories={categories} onAddTransaction={() => setSheetOpen(true)} />;
+            return <TransactionsScreen {...p} members={members} categories={categories} onAddTransaction={() => setSheetOpen(true)} onEditTransaction={handleEditTransaction} />;
           case "dashboard":
             return <DashboardAnalyticsScreen {...p} />;
           case "economias":
@@ -182,11 +186,12 @@
           </main>
           <AddTransactionSheet
             open={sheetOpen}
-            onClose={() => setSheetOpen(false)}
+            onClose={handleSheetClose}
             familyId={familyId}
             members={members}
             categories={categories}
-            onSaved={() => setSheetOpen(false)}
+            editTx={editTx}
+            onSaved={handleSheetClose}
           />
         </div>
       );

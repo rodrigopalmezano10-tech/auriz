@@ -94,6 +94,13 @@ const DB = {
     });
   },
 
+  async updateTransaction(id, { description, amount, categoryId, date, method, isRecurring, installmentCurrent, installmentTotal, notes }) {
+    return await API.fetch(`/transactions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ description, amount, categoryId, date, method, isRecurring, installmentCurrent, installmentTotal, notes }),
+    });
+  },
+
   async softDeleteTransaction(id) {
     return await API.fetch(`/transactions/${id}`, { method: 'DELETE' });
   },

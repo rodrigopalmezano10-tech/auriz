@@ -1,7 +1,7 @@
 /* eslint-disable */
 // Auriz — Dashboard / "Hoje" — dados reais do Supabase
 
-const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onNav }) => {
+const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onEditTransaction, onNav }) => {
   const [txs, setTxs]           = React.useState([]);
   const [budgets, setBudgets]   = React.useState([]);
   const [insight, setInsight]   = React.useState(null);
@@ -28,17 +28,20 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
 
   if (loading) return <LoadingPane label="Carregando dashboard…" />;
 
-  const totalSpent  = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalIncome = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const balance     = totalIncome - totalSpent;
+  const totalSpent          = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalMonthlyIncome  = members.reduce((s, m) => s + parseFloat(m.monthly_income || 0), 0);
+  const totalExtraIncome    = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalIncome         = totalMonthlyIncome + totalExtraIncome;
+  const balance             = totalIncome - totalSpent;
   const topBudgets  = budgets.slice(0, 3);
   const recentTxs   = txs.slice(0, 6);
 
   return (
     <div style={{ padding: "32px 36px 64px", maxWidth: 1280, margin: "0 auto" }}>
 
-      {/* HERO */}
+      {/* ── HERO ── */}
       <section style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22, marginBottom: 32 }}>
+        {/* Saldo */}
         <Card padded={false} style={{ padding: "28px 32px 30px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -40, right: -40, width: 220, height: 220,
             background: "radial-gradient(circle, var(--auriz-gold-soft) 0%, transparent 70%)",
@@ -55,6 +58,7 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
           </div>
         </Card>
 
+        {/* Transferência / placeholder */}
         {transfer && !transfer.is_settled ? (
           <Card tone="gold" padded={false} style={{ padding: "28px 30px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
             <div>
@@ -83,8 +87,9 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
         )}
       </section>
 
-      {/* BODY */}
+      {/* ── BODY ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22 }}>
+        {/* Transações recentes */}
         <Card padded={false}>
           <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--hairline-soft)",
             display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -102,11 +107,13 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
             ? <EmptyState icon="CreditCard" title="Nenhuma transação ainda."
                 description="Quando você adicionar a primeira, ela aparece aqui."
                 action={<Button variant="primary" size="sm" onClick={onAddTransaction} leading={<Icon.Plus size={14}/>}>Adicionar</Button>} />
-            : recentTxs.map((tx, i) => <DashTxRow key={tx.id} tx={tx} isLast={i === recentTxs.length - 1} />)
+            : recentTxs.map((tx, i) => <DashTxRow key={tx.id + (tx.is_projected ? '_p' : '')} tx={tx} isLast={i === recentTxs.length - 1} onEdit={onEditTransaction} />)
           }
         </Card>
 
+        {/* Coluna direita */}
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          {/* Tetos */}
           <Card padded={false}>
             <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--hairline-soft)" }}>
               <h3 className="a-h3" style={{ margin: 0, fontSize: 18 }}>Tetos do mês</h3>
@@ -121,6 +128,7 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
             }
           </Card>
 
+          {/* Insight de IA */}
           {insight && (
             <Card tone="ink" style={{ borderColor: "var(--ink)", position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, color: "var(--auriz-gold)" }}>
@@ -129,7 +137,7 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
               </div>
               <p style={{ fontFamily: "var(--font-display)", fontSize: 17, lineHeight: 1.35,
                 margin: 0, color: "var(--paper)", letterSpacing: "-0.005em" }}>{insight.content}</p>
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
                 <button onClick={async () => { await DB.dismissInsight(insight.id); setInsight(null); }}
                   style={{ background: "transparent", border: "none", color: "var(--ink-3)",
                     padding: "6px 8px", borderRadius: "var(--r-2)", fontSize: 12.5, cursor: "pointer",
@@ -143,12 +151,23 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
   );
 };
 
-const DashTxRow = ({ tx, isLast }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "36px 1fr auto auto", gap: 14, alignItems: "center",
-    padding: "13px 22px", borderBottom: isLast ? "none" : "1px solid var(--hairline-soft)" }}>
+const DashTxRow = ({ tx, isLast, onEdit }) => (
+  <div
+    onClick={() => onEdit?.(tx)}
+    style={{ display: "grid", gridTemplateColumns: "36px 1fr auto auto", gap: 14, alignItems: "center",
+      padding: "13px 22px", borderBottom: isLast ? "none" : "1px solid var(--hairline-soft)",
+      cursor: onEdit ? "pointer" : "default",
+      background: tx.is_projected ? "var(--auriz-gold-soft)" : "transparent",
+      opacity: tx.is_projected ? 0.8 : 1,
+      transition: "background var(--dur-fast) var(--ease-out)" }}
+    onMouseEnter={e => { if (onEdit) e.currentTarget.style.background = tx.is_projected ? "var(--auriz-gold)" : "var(--surface)"; }}
+    onMouseLeave={e => { e.currentTarget.style.background = tx.is_projected ? "var(--auriz-gold-soft)" : "transparent"; }}>
     <CategoryChip name={tx.category_name} icon={tx.category_icon} color={tx.category_color} />
     <div>
-      <div style={{ fontSize: 14, fontWeight: 500 }}>{tx.description}</div>
+      <div style={{ fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+        {tx.description}
+        {tx.is_projected && <span style={{ fontSize: 11, color: "var(--auriz-gold-deep)", fontStyle: "italic" }}>projetada</span>}
+      </div>
       <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, display: "flex", gap: 8, alignItems: "center" }}>
         <Avatar name={tx.member_name ?? "?"} color={tx.member_color ?? "gold"} size={18} />
         <span>{tx.member_name?.split(" ")[0]}</span>
