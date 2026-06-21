@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Auriz — Login com Supabase Auth
+// Auriz — Login (Cloudflare Worker Auth)
 
 const LoginScreen = ({ onLogin }) => {
   const [email, setEmail]       = React.useState("");
@@ -15,12 +15,6 @@ const LoginScreen = ({ onLogin }) => {
     finally { setLoading(false); }
   };
 
-  const handleGoogle = async () => {
-    setError(""); setLoading(true);
-    try { await DB.signInWithGoogle(); }
-    catch (err) { setError(err.message); setLoading(false); }
-  };
-
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)",
       display: "grid", gridTemplateColumns: "1.1fr 1fr" }}>
@@ -28,6 +22,9 @@ const LoginScreen = ({ onLogin }) => {
       {/* Esquerda — editorial */}
       <div style={{ padding: "56px 64px", display: "flex", flexDirection: "column",
         background: "var(--paper-deep)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0,
+          backgroundImage: "url(../../assets/pattern-coin.svg)", backgroundSize: "240px",
+          opacity: 0.18, pointerEvents: "none" }} />
         <div style={{ position: "relative", zIndex: 1 }}><Logo height={32} /></div>
         <div style={{ flex: 1, display: "flex", alignItems: "center", position: "relative", zIndex: 1 }}>
           <div>
@@ -70,14 +67,6 @@ const LoginScreen = ({ onLogin }) => {
               {loading ? "Entrando…" : "Entrar"}
             </Button>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}>
-              <div style={{ flex: 1, height: 1, background: "var(--hairline)" }} />
-              <span className="a-caption">ou</span>
-              <div style={{ flex: 1, height: 1, background: "var(--hairline)" }} />
-            </div>
-            <Button variant="ghost" size="lg" type="button" onClick={handleGoogle} disabled={loading}>
-              Continuar com Google
-            </Button>
           </form>
         </div>
       </div>
