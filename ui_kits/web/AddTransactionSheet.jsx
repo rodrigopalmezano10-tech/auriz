@@ -223,7 +223,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
             value={description} onChange={e => setDescription(e.target.value)} required />
           <Select label="Categoria"
             value={categoryId} onChange={e => setCategoryId(e.target.value)}
-            options={categories.filter(c => c.is_income === !isExpense).map(c => ({ value: c.id, label: c.name }))} />
+            options={categories.filter(c => !!c.is_income === !isExpense).map(c => ({ value: c.id, label: c.name }))} />
         </div>
 
         {/* Data + Método + Parcelas */}
