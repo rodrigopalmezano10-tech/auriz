@@ -1,7 +1,7 @@
 /* eslint-disable */
 // Auriz — Transações — lista completa com delete, edit e filtros
 
-const TransactionsScreen = ({ familyId, month, year, members, categories, onAddTransaction, onEditTransaction }) => {
+const TransactionsScreen = ({ familyId, month, year, members, categories, viewMember, onAddTransaction, onEditTransaction }) => {
   const [txs, setTxs]       = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter]   = React.useState("all");   // all | shared | installments | income
@@ -25,11 +25,11 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, onAddT
     finally { setDeleting(null); }
   };
 
-  let filtered = txs;
-  if (filter === "shared")       filtered = txs.filter(t => t.is_shared);
-  if (filter === "installments") filtered = txs.filter(t => t.installment_label);
-  if (filter === "income")       filtered = txs.filter(t => t.amount > 0);
-  if (filter === "expenses")     filtered = txs.filter(t => t.amount < 0);
+  let filtered = viewMember && viewMember !== "all" ? txs.filter(t => t.member_id === viewMember) : txs;
+  if (filter === "shared")       filtered = filtered.filter(t => t.is_shared);
+  if (filter === "installments") filtered = filtered.filter(t => t.installment_label);
+  if (filter === "income")       filtered = filtered.filter(t => t.amount > 0);
+  if (filter === "expenses")     filtered = filtered.filter(t => t.amount < 0);
 
   const grouped = filtered.reduce((acc, tx) => {
     const k = tx.transaction_date;

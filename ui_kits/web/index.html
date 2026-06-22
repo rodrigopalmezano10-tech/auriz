@@ -109,8 +109,9 @@
       const [active, setActive]       = React.useState("hoje");
       const [month, setMonth]         = React.useState(new Date().getMonth());
       const [year, setYear]           = React.useState(new Date().getFullYear());
-      const [sheetOpen, setSheetOpen] = React.useState(false);
-      const [editTx, setEditTx]       = React.useState(null);
+      const [sheetOpen, setSheetOpen]   = React.useState(false);
+      const [editTx, setEditTx]         = React.useState(null);
+      const [viewMember, setViewMember] = React.useState("all");
 
       const handleEditTransaction = (tx) => { setEditTx(tx); setSheetOpen(true); };
       const handleSheetClose = () => { setSheetOpen(false); setEditTx(null); };

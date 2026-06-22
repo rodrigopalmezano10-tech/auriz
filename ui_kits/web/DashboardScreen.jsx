@@ -1,7 +1,7 @@
 /* eslint-disable */
 // Auriz — Dashboard / "Hoje" — dados reais do Supabase
 
-const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onEditTransaction, onNav }) => {
+const DashboardScreen = ({ familyId, month, year, members, viewMember, onAddTransaction, onEditTransaction, onNav }) => {
   const [txs, setTxs]           = React.useState([]);
   const [budgets, setBudgets]   = React.useState([]);
   const [insight, setInsight]   = React.useState(null);
@@ -28,13 +28,15 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onE
 
   if (loading) return <LoadingPane label="Carregando dashboard…" />;
 
-  const totalSpent          = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalMonthlyIncome  = members.reduce((s, m) => s + parseFloat(m.monthly_income || 0), 0);
-  const totalExtraIncome    = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const visibleTxs          = viewMember && viewMember !== "all" ? txs.filter(t => t.member_id === viewMember) : txs;
+  const visibleMembers      = viewMember && viewMember !== "all" ? members.filter(m => m.id === viewMember) : members;
+  const totalSpent          = visibleTxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalMonthlyIncome  = visibleMembers.reduce((s, m) => s + parseFloat(m.monthly_income || 0), 0);
+  const totalExtraIncome    = visibleTxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const totalIncome         = totalMonthlyIncome + totalExtraIncome;
   const balance             = totalIncome - totalSpent;
   const topBudgets  = budgets.slice(0, 3);
-  const recentTxs   = txs.slice(0, 6);
+  const recentTxs   = visibleTxs.slice(0, 6);
 
   return (
     <div style={{ padding: "32px 36px 64px", maxWidth: 1280, margin: "0 auto" }}>
