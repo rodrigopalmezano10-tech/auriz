@@ -20,8 +20,10 @@ const DashboardAnalyticsScreen = ({ familyId, month, year }) => {
 
   if (loading) return <LoadingPane label="Carregando analytics…" />;
 
-  const totalSpent  = spending.reduce((s, c) => s + parseFloat(c.total_spent ?? 0), 0);
-  const totalIncome = spending.reduce((s, c) => s + parseFloat(c.total_income ?? 0), 0);
+  const totalSpent         = spending.reduce((s, c) => s + parseFloat(c.total_spent ?? 0), 0);
+  const totalMonthlyIncome = balances.reduce((s, b) => s + parseFloat(b.monthly_income ?? 0), 0);
+  const totalExtraIncome   = spending.reduce((s, c) => s + parseFloat(c.total_income ?? 0), 0);
+  const totalIncome        = totalMonthlyIncome + totalExtraIncome;
 
   const monthHistory = {};
   history.forEach(r => {
@@ -112,7 +114,7 @@ const DashboardAnalyticsScreen = ({ familyId, month, year }) => {
           ) : (
             <div style={{ padding: "16px 22px 20px", display: "flex", flexDirection: "column", gap: 18 }}>
               {balances.map(b => {
-                const net = parseFloat(b.net_balance ?? 0);
+                const net = parseFloat(b.balance ?? 0);
                 return (
                   <div key={b.member_id}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -120,22 +122,22 @@ const DashboardAnalyticsScreen = ({ familyId, month, year }) => {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{b.member_name}</div>
                         <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                          Renda: R$ {parseFloat(b.monthly_income).toLocaleString("pt-BR")}
+                          Renda: R$ {parseFloat(b.monthly_income ?? 0).toLocaleString("pt-BR")}
                         </div>
                       </div>
                       <MoneyMono value={net} tone={net >= 0 ? "sage" : "terra"} />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       <div style={{ padding: "8px 12px", background: "var(--sage-soft)", borderRadius: "var(--r-2)" }}>
-                        <div style={{ fontSize: 11, color: "var(--sage)", fontWeight: 500, marginBottom: 2 }}>Receita</div>
+                        <div style={{ fontSize: 11, color: "var(--sage)", fontWeight: 500, marginBottom: 2 }}>Renda mensal</div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--sage)" }}>
-                          +R$ {parseFloat(b.income ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          +R$ {parseFloat(b.monthly_income ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </div>
                       </div>
                       <div style={{ padding: "8px 12px", background: "var(--terracotta-soft)", borderRadius: "var(--r-2)" }}>
                         <div style={{ fontSize: 11, color: "var(--terracotta)", fontWeight: 500, marginBottom: 2 }}>Despesas</div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--terracotta)" }}>
-                          −R$ {(parseFloat(b.personal_expenses ?? 0) + parseFloat(b.shared_expenses_split ?? 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          −R$ {parseFloat(b.total_spent ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </div>
                       </div>
                     </div>

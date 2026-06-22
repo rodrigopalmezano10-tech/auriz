@@ -38,6 +38,14 @@ const DashboardScreen = ({ familyId, month, year, members, viewMember, onAddTran
   const topBudgets  = budgets.slice(0, 3);
   const recentTxs   = visibleTxs.slice(0, 6);
 
+  const memberBalances = members.map(m => {
+    const mtxs  = txs.filter(t => t.member_id === m.id && !t.is_projected);
+    const income = mtxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const spent  = mtxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const net    = parseFloat(m.monthly_income ?? 0) + income - spent;
+    return { ...m, txIncome: income, txSpent: spent, net };
+  });
+
   return (
     <div style={{ padding: "32px 36px 64px", maxWidth: 1280, margin: "0 auto" }}>
 
@@ -128,6 +136,43 @@ const DashboardScreen = ({ familyId, month, year, members, viewMember, onAddTran
                   {topBudgets.map(b => <BudgetPulse key={b.category_id} budget={b} />)}
                 </div>
             }
+          </Card>
+
+          {/* Saldo por membro */}
+          <Card padded={false}>
+            <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--hairline-soft)" }}>
+              <h3 className="a-h3" style={{ margin: 0, fontSize: 18 }}>Saldo por membro</h3>
+            </div>
+            <div style={{ padding: "16px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              {memberBalances.map(m => (
+                <div key={m.id}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <Avatar name={m.name} color={m.color} size={28} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 500 }}>{m.name.split(" ")[0]}</div>
+                      <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        Renda: R$ {parseFloat(m.monthly_income ?? 0).toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                    <MoneyMono value={m.net} tone={m.net >= 0 ? "sage" : "terra"} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    <div style={{ padding: "6px 10px", background: "var(--sage-soft)", borderRadius: "var(--r-1)" }}>
+                      <div style={{ fontSize: 10, color: "var(--sage)", fontWeight: 500, marginBottom: 1 }}>Renda mensal</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--sage)" }}>
+                        +R$ {parseFloat(m.monthly_income ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <div style={{ padding: "6px 10px", background: "var(--terracotta-soft)", borderRadius: "var(--r-1)" }}>
+                      <div style={{ fontSize: 10, color: "var(--terracotta)", fontWeight: 500, marginBottom: 1 }}>Despesas</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--terracotta)" }}>
+                        −R$ {m.txSpent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
 
           {/* Insight de IA */}
