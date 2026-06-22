@@ -66,6 +66,32 @@
   <!-- App shell -->
   <script type="text/babel" data-presets="env,react">
 
+    class ErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { err: null }; }
+      static getDerivedStateFromError(err) { return { err }; }
+      render() {
+        if (this.state.err) {
+          return (
+            <div style={{ padding: 40, fontFamily: "monospace", maxWidth: 720, margin: "40px auto" }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: "#b91c1c", marginBottom: 12 }}>
+                Erro ao renderizar esta tela
+              </div>
+              <pre style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8,
+                padding: 16, fontSize: 13, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                {this.state.err.message}{"\n\n"}{this.state.err.stack}
+              </pre>
+              <button onClick={() => this.setState({ err: null })}
+                style={{ marginTop: 16, padding: "8px 20px", background: "#1c1917", color: "#fff",
+                  border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14 }}>
+                Tentar novamente
+              </button>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
     const AppLoading = () => (
       <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20 }}>
         <Logo size={42} />
@@ -182,7 +208,7 @@
               month={month} year={year} onMonth={shiftMonth}
               onAddTransaction={() => setSheetOpen(true)}
             />
-            <div style={{ flex: 1 }}>{renderScreen()}</div>
+            <div style={{ flex: 1 }}><ErrorBoundary>{renderScreen()}</ErrorBoundary></div>
           </main>
           <AddTransactionSheet
             open={sheetOpen}

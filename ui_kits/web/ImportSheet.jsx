@@ -111,11 +111,11 @@ const ImportSheet = ({ open, onClose, familyId, members, categories, onImported 
             description:     description || "(sem descrição)",
             catName,
             categoryId:      category?.id  ?? null,
-            categoryLabel:   category?.name ?? catName || "—",
+            categoryLabel:   (category?.name ?? catName) || "—",
             catOk:           !!category,
             memberName,
             memberId:        member?.id   ?? null,
-            memberLabel:     member?.name ?? memberName || "—",
+            memberLabel:     (member?.name ?? memberName) || "—",
             memberOk:        !!member,
             amount:          -Math.abs(amount),  // sempre despesa
             method:          normalizeMethod(methodRaw),
