@@ -24,13 +24,14 @@ window.API = {
       },
     });
 
-    if (resp.status === 401) {
-      this.setToken(null);
-      throw new Error('Sessão expirada. Faça login novamente.');
-    }
-
     const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) throw new Error(data.error ?? 'Erro na requisição.');
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        this.setToken(null);
+        throw new Error(data.error ?? 'Sessão expirada. Faça login novamente.');
+      }
+      throw new Error(data.error ?? 'Erro na requisição.');
+    }
     return data;
   },
 };
