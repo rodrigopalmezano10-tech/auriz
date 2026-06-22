@@ -111,11 +111,11 @@ const ImportSheet = ({ open, onClose, familyId, members, categories, onImported 
             description:     description || "(sem descrição)",
             catName,
             categoryId:      category?.id  ?? null,
-            categoryLabel:   category?.name ?? catName || "—",
+            categoryLabel:   (category?.name ?? catName) || "—",
             catOk:           !!category,
             memberName,
             memberId:        member?.id   ?? null,
-            memberLabel:     member?.name ?? memberName || "—",
+            memberLabel:     (member?.name ?? memberName) || "—",
             memberOk:        !!member,
             amount:          -Math.abs(amount),  // sempre despesa
             method:          normalizeMethod(methodRaw),
@@ -231,7 +231,7 @@ const ImportSheet = ({ open, onClose, familyId, members, categories, onImported 
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>Importar transações</div>
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
-              {step === "upload"    && "Envie o arquivo Excel com a aba "Transações""}
+              {step === "upload"    && 'Envie o arquivo Excel com a aba "Transações"'}
               {step === "preview"   && `${rows.length} linhas lidas · ${validCount} válidas · ${skippedCount} ignoradas`}
               {step === "importing" && `Importando… ${progress}%`}
               {step === "done"      && "Importação concluída"}

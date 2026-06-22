@@ -1,7 +1,7 @@
 /* eslint-disable */
 // Auriz — Dashboard / "Hoje" — dados reais do Supabase
 
-const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onNav }) => {
+const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onEditTransaction, onNav }) => {
   const [txs, setTxs]           = React.useState([]);
   const [budgets, setBudgets]   = React.useState([]);
   const [insight, setInsight]   = React.useState(null);
@@ -107,7 +107,7 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
             ? <EmptyState icon="CreditCard" title="Nenhuma transação ainda."
                 description="Quando você adicionar a primeira, ela aparece aqui."
                 action={<Button variant="primary" size="sm" onClick={onAddTransaction} leading={<Icon.Plus size={14}/>}>Adicionar</Button>} />
-            : recentTxs.map((tx, i) => <DashTxRow key={tx.id} tx={tx} isLast={i === recentTxs.length - 1} />)
+            : recentTxs.map((tx, i) => <DashTxRow key={tx.id + (tx.is_projected ? '_p' : '')} tx={tx} isLast={i === recentTxs.length - 1} onEdit={onEditTransaction} />)
           }
         </Card>
 
@@ -151,12 +151,23 @@ const DashboardScreen = ({ familyId, month, year, members, onAddTransaction, onN
   );
 };
 
-const DashTxRow = ({ tx, isLast }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "36px 1fr auto auto", gap: 14, alignItems: "center",
-    padding: "13px 22px", borderBottom: isLast ? "none" : "1px solid var(--hairline-soft)" }}>
+const DashTxRow = ({ tx, isLast, onEdit }) => (
+  <div
+    onClick={() => onEdit?.(tx)}
+    style={{ display: "grid", gridTemplateColumns: "36px 1fr auto auto", gap: 14, alignItems: "center",
+      padding: "13px 22px", borderBottom: isLast ? "none" : "1px solid var(--hairline-soft)",
+      cursor: onEdit ? "pointer" : "default",
+      background: tx.is_projected ? "var(--auriz-gold-soft)" : "transparent",
+      opacity: tx.is_projected ? 0.8 : 1,
+      transition: "background var(--dur-fast) var(--ease-out)" }}
+    onMouseEnter={e => { if (onEdit) e.currentTarget.style.background = tx.is_projected ? "var(--auriz-gold)" : "var(--surface)"; }}
+    onMouseLeave={e => { e.currentTarget.style.background = tx.is_projected ? "var(--auriz-gold-soft)" : "transparent"; }}>
     <CategoryChip name={tx.category_name} icon={tx.category_icon} color={tx.category_color} />
     <div>
-      <div style={{ fontSize: 14, fontWeight: 500 }}>{tx.description}</div>
+      <div style={{ fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+        {tx.description}
+        {tx.is_projected && <span style={{ fontSize: 11, color: "var(--auriz-gold-deep)", fontStyle: "italic" }}>projetada</span>}
+      </div>
       <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, display: "flex", gap: 8, alignItems: "center" }}>
         <Avatar name={tx.member_name ?? "?"} color={tx.member_color ?? "gold"} size={18} />
         <span>{tx.member_name?.split(" ")[0]}</span>

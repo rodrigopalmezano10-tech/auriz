@@ -1,7 +1,7 @@
 /* eslint-disable */
-// Auriz — Transações — lista completa com delete e filtros
+// Auriz — Transações — lista completa com delete, edit e filtros
 
-const TransactionsScreen = ({ familyId, month, year, members, categories, onAddTransaction }) => {
+const TransactionsScreen = ({ familyId, month, year, members, categories, onAddTransaction, onEditTransaction }) => {
   const [txs, setTxs]       = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter]   = React.useState("all");   // all | shared | installments | income
@@ -37,7 +37,7 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, onAddT
     acc[k].push(tx); return acc;
   }, {});
 
-  const totalThisMonth = filtered.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalThisMonth = filtered.filter(t => t.amount < 0 && !t.is_projected).reduce((s, t) => s + Math.abs(t.amount), 0);
 
   if (loading) return <LoadingPane label="Carregando transações…" />;
 
@@ -56,7 +56,7 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, onAddT
       {/* Resumo + filtros */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 28, marginBottom: 24, flexWrap: "wrap" }}>
         <div>
-          <div className="a-overline">Gasto · {filtered.length} transações</div>
+          <div className="a-overline">Gasto · {filtered.filter(t => !t.is_projected).length} transações</div>
           <div style={{ marginTop: 6 }}><Money value={-totalThisMonth} size="lg" tone="terra" /></div>
         </div>
         <div style={{ flex: 1 }} />
@@ -86,7 +86,7 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, onAddT
           action={<Button variant="primary" size="sm" onClick={onAddTransaction} leading={<Icon.Plus size={14}/>}>Adicionar transação</Button>} />
       ) : (
         <Card padded={false}>
-          {Object.entries(grouped).map(([date, txList], gi, arr) => (
+          {Object.entries(grouped).map(([date, txList], gi) => (
             <div key={date}>
               <div style={{ padding: "12px 24px 8px",
                 borderTop: gi === 0 ? "none" : "1px solid var(--hairline-soft)",
@@ -95,24 +95,33 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, onAddT
                   {new Date(date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
                 </span>
                 <span style={{ marginLeft: 10, fontFamily: "var(--font-display)", color: "var(--ink-3)", fontSize: 13 }}>
-                  {txList.length} {txList.length === 1 ? "lançamento" : "lançamentos"}
+                  {txList.filter(t => !t.is_projected).length} {txList.filter(t => !t.is_projected).length === 1 ? "lançamento" : "lançamentos"}
+                  {txList.some(t => t.is_projected) && (
+                    <span style={{ marginLeft: 6, color: "var(--auriz-gold-deep)", fontSize: 11 }}>
+                      + {txList.filter(t => t.is_projected).length} projetada{txList.filter(t => t.is_projected).length > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </span>
               </div>
               {txList.map((tx) => {
-                const member = members.find(m => m.id === tx.member_id);
+                const isProjected = !!tx.is_projected;
                 return (
-                  <div key={tx.id} style={{
-                    display: "grid", gridTemplateColumns: "36px 1fr 130px 140px 36px", gap: 14,
+                  <div key={tx.id + (isProjected ? '_proj' : '')} style={{
+                    display: "grid", gridTemplateColumns: "36px 1fr 130px 140px 36px 36px", gap: 14,
                     alignItems: "center", padding: "12px 24px",
-                    borderTop: "1px solid var(--hairline-soft)", background: "var(--surface)",
+                    borderTop: "1px solid var(--hairline-soft)",
+                    background: isProjected ? "var(--auriz-gold-soft)" : "var(--surface)",
                     transition: "background var(--dur-fast) var(--ease-out)",
-                    opacity: deleting === tx.id ? 0.4 : 1,
+                    opacity: (deleting === tx.id) ? 0.4 : isProjected ? 0.75 : 1,
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#fff"}
-                  onMouseLeave={e => e.currentTarget.style.background = "var(--surface)"}>
+                  onMouseEnter={e => { if (!isProjected) e.currentTarget.style.background = "#fff"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isProjected ? "var(--auriz-gold-soft)" : "var(--surface)"; }}>
                     <CategoryChip name={tx.category_name} icon={tx.category_icon} color={tx.category_color} />
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 500 }}>{tx.description}</div>
+                      <div style={{ fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                        {tx.description}
+                        {isProjected && <span style={{ fontSize: 11, color: "var(--auriz-gold-deep)", fontStyle: "italic" }}>projetada</span>}
+                      </div>
                       <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2,
                         display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                         <span>{tx.category_name}</span>
@@ -129,12 +138,24 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, onAddT
                       <MoneyMono value={tx.amount} tone={tx.amount > 0 ? "sage" : "terra"} />
                       <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>{tx.method}</div>
                     </div>
+                    {/* Editar */}
                     <button
-                      onClick={() => handleDelete(tx.id)}
-                      disabled={deleting === tx.id}
+                      onClick={() => onEditTransaction?.(tx)}
                       style={{ background: "transparent", border: "none", cursor: "pointer",
-                        color: "var(--ink-3)", padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
-                      title="Remover">
+                        color: isProjected ? "var(--auriz-gold-deep)" : "var(--ink-3)",
+                        padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
+                      title={isProjected ? "Registrar esta recorrente" : "Editar"}>
+                      <Icon.Edit size={15} />
+                    </button>
+                    {/* Deletar — não disponível para projetadas */}
+                    <button
+                      onClick={() => !isProjected && handleDelete(tx.id)}
+                      disabled={deleting === tx.id || isProjected}
+                      style={{ background: "transparent", border: "none",
+                        cursor: isProjected ? "default" : "pointer",
+                        color: isProjected ? "transparent" : "var(--ink-3)",
+                        padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
+                      title={isProjected ? "" : "Remover"}>
                       <Icon.Trash2 size={15} />
                     </button>
                   </div>
