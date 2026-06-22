@@ -173,7 +173,7 @@
       };
 
       const renderScreen = () => {
-        const p = { familyId, month, year };
+        const p = { familyId, month, year, viewMember };
         switch (active) {
           case "hoje":
             return <DashboardScreen {...p} members={members} onAddTransaction={() => setSheetOpen(true)} onEditTransaction={handleEditTransaction} onNav={setActive} />;
@@ -201,6 +201,7 @@
       return (
         <div style={{ display: "flex", minHeight: "100vh" }} data-screen-label={`Auriz · ${titles[active]?.title || active}`}>
           <Sidebar active={active} onNav={setActive} members={members}
+            viewMember={viewMember} onViewMember={setViewMember}
             onLogout={() => { DB.signOut(); setStage("auth"); }} />
           <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
             <TopBar
