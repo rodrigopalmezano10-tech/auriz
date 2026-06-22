@@ -62,8 +62,8 @@ const GoalsScreen = ({ familyId, members }) => {
 };
 
 const GoalCard = ({ goal, onContribute, onDelete }) => {
-  const pct       = parseFloat(goal.pct_complete ?? 0);
-  const remaining = parseFloat(goal.remaining ?? 0);
+  const pct       = parseFloat(goal.pct_done ?? 0);
+  const remaining = Math.max(0, parseFloat(goal.target_amount ?? 0) - parseFloat(goal.saved_amount ?? 0));
   const daysLeft  = goal.days_remaining;
 
   return (
