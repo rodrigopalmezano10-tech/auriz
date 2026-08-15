@@ -17,10 +17,13 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
 
   React.useEffect(() => { if (familyId) load(); }, [familyId, month, year, refreshKey]);
 
-  const handleDelete = async (id) => {
-    if (!confirm("Remover esta transação? A ação pode ser revertida pelo banco de dados.")) return;
+  const handleDelete = async (id, isProjected) => {
+    const msg = isProjected
+      ? "Remover esta recorrente? Ela não será mais projetada nos próximos meses."
+      : "Remover esta transação?";
+    if (!confirm(msg)) return;
     setDeleting(id);
-    try { await DB.softDeleteTransaction(id); showToast("Transação removida."); load(); }
+    try { await DB.softDeleteTransaction(id); showToast("Removido."); load(); }
     catch { showToast("Não foi possível remover.", "error"); }
     finally { setDeleting(null); }
   };
@@ -158,16 +161,7 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
                       <MoneyMono value={tx.amount} tone={tx.amount > 0 ? "sage" : "terra"} />
                       <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>{tx.method}</div>
                     </div>
-                    {/* Editar */}
-                    <button
-                      onClick={() => onEditTransaction?.(tx)}
-                      style={{ background: "transparent", border: "none", cursor: "pointer",
-                        color: isProjected ? "var(--auriz-gold-deep)" : "var(--ink-3)",
-                        padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
-                      title={isProjected ? "Registrar esta recorrente" : "Editar"}>
-                      <Icon.Edit size={15} />
-                    </button>
-                    {/* Efetivar (projetadas) ou Deletar (reais) */}
+                    {/* Col 5: Efetivar (projetada) ou Editar (real) */}
                     {isProjected ? (
                       <button
                         onClick={() => handleConfirm(tx)}
@@ -179,14 +173,22 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleDelete(tx.id)}
-                        disabled={deleting === tx.id}
+                        onClick={() => onEditTransaction?.(tx)}
                         style={{ background: "transparent", border: "none", cursor: "pointer",
                           color: "var(--ink-3)", padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
-                        title="Remover">
-                        <Icon.Trash2 size={15} />
+                        title="Editar">
+                        <Icon.Edit size={15} />
                       </button>
                     )}
+                    {/* Col 6: Excluir */}
+                    <button
+                      onClick={() => handleDelete(tx.id, isProjected)}
+                      disabled={deleting === tx.id}
+                      style={{ background: "transparent", border: "none", cursor: "pointer",
+                        color: "var(--ink-3)", padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
+                      title={isProjected ? "Remover recorrente" : "Remover"}>
+                      <Icon.Trash2 size={15} />
+                    </button>
                   </div>
                 );
               })}
