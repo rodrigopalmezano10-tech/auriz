@@ -1,7 +1,7 @@
 /* eslint-disable */
 // Auriz — Transações — lista completa com delete, edit e filtros
 
-const TransactionsScreen = ({ familyId, month, year, members, categories, viewMember, onAddTransaction, onEditTransaction }) => {
+const TransactionsScreen = ({ familyId, month, year, members, categories, viewMember, refreshKey, onAddTransaction, onEditTransaction }) => {
   const [txs, setTxs]       = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter]   = React.useState("all");   // all | shared | installments | income
@@ -15,7 +15,7 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
       .then(setTxs).finally(() => setLoading(false));
   };
 
-  React.useEffect(() => { if (familyId) load(); }, [familyId, month, year]);
+  React.useEffect(() => { if (familyId) load(); }, [familyId, month, year, refreshKey]);
 
   const handleDelete = async (id) => {
     if (!confirm("Remover esta transação? A ação pode ser revertida pelo banco de dados.")) return;

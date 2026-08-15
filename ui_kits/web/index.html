@@ -112,9 +112,11 @@
       const [sheetOpen, setSheetOpen]   = React.useState(false);
       const [editTx, setEditTx]         = React.useState(null);
       const [viewMember, setViewMember] = React.useState("all");
+      const [refreshKey, setRefreshKey] = React.useState(0);
 
       const handleEditTransaction = (tx) => { setEditTx(tx); setSheetOpen(true); };
       const handleSheetClose = () => { setSheetOpen(false); setEditTx(null); };
+      const handleSaved = () => { setSheetOpen(false); setEditTx(null); setRefreshKey(k => k + 1); };
 
       const init = React.useCallback(async () => {
         setStage("loading");
@@ -173,7 +175,7 @@
       };
 
       const renderScreen = () => {
-        const p = { familyId, month, year, viewMember };
+        const p = { familyId, month, year, viewMember, refreshKey };
         switch (active) {
           case "hoje":
             return <DashboardScreen {...p} members={members} onAddTransaction={() => setSheetOpen(true)} onEditTransaction={handleEditTransaction} onNav={setActive} />;
@@ -219,7 +221,7 @@
             members={members}
             categories={categories}
             editTx={editTx}
-            onSaved={handleSheetClose}
+            onSaved={handleSaved}
           />
         </div>
       );

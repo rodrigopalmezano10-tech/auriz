@@ -1,7 +1,7 @@
 /* eslint-disable */
 // Auriz — Dashboard / "Hoje" — dados reais do Supabase
 
-const DashboardScreen = ({ familyId, month, year, members, viewMember, onAddTransaction, onEditTransaction, onNav }) => {
+const DashboardScreen = ({ familyId, month, year, members, viewMember, refreshKey, onAddTransaction, onEditTransaction, onNav }) => {
   const [txs, setTxs]           = React.useState([]);
   const [budgets, setBudgets]   = React.useState([]);
   const [insight, setInsight]   = React.useState(null);
@@ -24,7 +24,7 @@ const DashboardScreen = ({ familyId, month, year, members, viewMember, onAddTran
     }).finally(() => setLoading(false));
   };
 
-  React.useEffect(() => { if (familyId) load(); }, [familyId, month, year]);
+  React.useEffect(() => { if (familyId) load(); }, [familyId, month, year, refreshKey]);
 
   if (loading) return <LoadingPane label="Carregando dashboard…" />;
 
