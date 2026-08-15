@@ -25,6 +25,26 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
     finally { setDeleting(null); }
   };
 
+  const handleConfirm = async (tx) => {
+    setDeleting(tx.id);
+    try {
+      await DB.addTransaction({
+        familyId,
+        memberId: tx.member_id,
+        categoryId: tx.category_id,
+        description: tx.description,
+        amount: tx.amount,
+        date: tx.transaction_date,
+        method: tx.method ?? "PIX",
+        isShared: false,
+        isRecurring: false,
+      });
+      showToast("Transação efetivada.");
+      load();
+    } catch { showToast("Não foi possível efetivar.", "error"); }
+    finally { setDeleting(null); }
+  };
+
   let filtered = viewMember && viewMember !== "all" ? txs.filter(t => t.member_id === viewMember) : txs;
   if (filter === "shared")       filtered = filtered.filter(t => t.is_shared);
   if (filter === "installments") filtered = filtered.filter(t => t.installment_label);
@@ -147,17 +167,26 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
                       title={isProjected ? "Registrar esta recorrente" : "Editar"}>
                       <Icon.Edit size={15} />
                     </button>
-                    {/* Deletar — não disponível para projetadas */}
-                    <button
-                      onClick={() => !isProjected && handleDelete(tx.id)}
-                      disabled={deleting === tx.id || isProjected}
-                      style={{ background: "transparent", border: "none",
-                        cursor: isProjected ? "default" : "pointer",
-                        color: isProjected ? "transparent" : "var(--ink-3)",
-                        padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
-                      title={isProjected ? "" : "Remover"}>
-                      <Icon.Trash2 size={15} />
-                    </button>
+                    {/* Efetivar (projetadas) ou Deletar (reais) */}
+                    {isProjected ? (
+                      <button
+                        onClick={() => handleConfirm(tx)}
+                        disabled={deleting === tx.id}
+                        style={{ background: "transparent", border: "none", cursor: "pointer",
+                          color: "var(--auriz-gold-deep)", padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
+                        title="Efetivar esta transação">
+                        <Icon.CheckCircle size={15} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDelete(tx.id)}
+                        disabled={deleting === tx.id}
+                        style={{ background: "transparent", border: "none", cursor: "pointer",
+                          color: "var(--ink-3)", padding: 4, display: "flex", borderRadius: "var(--r-1)" }}
+                        title="Remover">
+                        <Icon.Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 );
               })}
