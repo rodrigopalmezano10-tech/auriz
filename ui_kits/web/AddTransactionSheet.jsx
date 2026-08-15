@@ -69,6 +69,13 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
   const partner = members.find(m => m.id === shareWithId);
   const splitReady = shared && shareWithId && numAmount > 0;
 
+  const handleDelete = async () => {
+    if (!confirm("Excluir esta transação?")) return;
+    setLoading(true);
+    try { await DB.softDeleteTransaction(editTx.id); onSaved?.(); onClose(); }
+    catch { setError("Não foi possível excluir."); setLoading(false); }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || !description || !memberId || !categoryId) {
@@ -301,6 +308,15 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
         </div>}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          {isEditing && (
+            <button type="button" onClick={handleDelete} disabled={loading}
+              style={{ marginRight: "auto", background: "transparent", border: "none",
+                cursor: "pointer", color: "var(--terracotta)", display: "flex",
+                alignItems: "center", gap: 6, fontSize: 13.5, fontFamily: "var(--font-sans)",
+                padding: "6px 2px", borderRadius: "var(--r-1)" }}>
+              <Icon.Trash2 size={14} /> Excluir
+            </button>
+          )}
           <Button variant="ghost" type="button" onClick={onClose}>Cancelar</Button>
           <Button variant="primary" type="submit" disabled={loading}
             trailing={loading ? <Spinner size={15} /> : null}>
