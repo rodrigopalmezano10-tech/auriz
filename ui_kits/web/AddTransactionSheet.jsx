@@ -91,7 +91,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
         const base = {
           familyId, categoryId, description,
           amount: half, date, method,
-          isShared: true, isRecurring: recurring,
+          isShared: true, isRecurring: recurring || installments > 1,
           installmentCurrent: installments > 1 ? parseInt(editTx?.installment_current ?? 1) : null,
           installmentTotal:   installments > 1 ? parseInt(installments) : null,
         };
@@ -105,7 +105,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
           familyId, memberId, categoryId, description,
           amount: sign * Math.abs(numAmount),
           date, method,
-          isShared: false, isRecurring: recurring,
+          isShared: false, isRecurring: recurring || installments > 1,
           installmentCurrent: installments > 1 ? parseInt(editTx?.installment_current ?? 1) : null,
           installmentTotal:   installments > 1 ? parseInt(installments) : null,
         });
