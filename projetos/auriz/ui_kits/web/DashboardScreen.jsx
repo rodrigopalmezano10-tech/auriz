@@ -1,0 +1,341 @@
+/* eslint-disable */
+// Auriz — Dashboard / "Hoje"
+
+const DashboardScreen = ({ familyId, month, year, members, viewMember, refreshKey, onAddTransaction, onEditTransaction, onNav }) => {
+  const [txs, setTxs]           = React.useState([]);
+  const [budgets, setBudgets]   = React.useState([]);
+  const [insight, setInsight]   = React.useState(null);
+  const [transfer, setTransfer] = React.useState(null);
+  const [savings, setSavings]   = React.useState(0);
+  const [loading, setLoading]   = React.useState(true);
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      DB.getTransactions(familyId, month + 1, year),
+      DB.getBudgetStatus(familyId, month + 1, year),
+      DB.getActiveInsight(familyId),
+      DB.getTransfer(familyId, month + 1, year),
+      DB.getSavings(familyId),
+    ]).then(([t, b, i, tr, sv]) => {
+      setTxs(t); setBudgets(b); setInsight(i); setTransfer(tr);
+      const cur = sv.find(s => s.month === month + 1 && s.year === year);
+      setSavings(cur?.amount ?? 0);
+    }).finally(() => setLoading(false));
+  };
+
+  React.useEffect(() => { if (familyId) load(); }, [familyId, month, year, refreshKey]);
+
+  if (loading) return <LoadingPane label="Carregando dashboard…" />;
+
+  const visibleTxs         = viewMember && viewMember !== "all" ? txs.filter(t => t.member_id === viewMember) : txs;
+  const visibleMembers     = viewMember && viewMember !== "all" ? members.filter(m => m.id === viewMember) : members;
+  const totalSpent         = visibleTxs.filter(t => t.amount < 0 && !t.is_projected).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalMonthlyIncome = visibleMembers.reduce((s, m) => s + parseFloat(m.monthly_income || 0), 0);
+  const totalExtraIncome   = visibleTxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalIncome        = totalMonthlyIncome + totalExtraIncome;
+  const balance            = totalIncome - totalSpent;
+  const topBudgets         = budgets.slice(0, 3);
+  const recentTxs          = visibleTxs.slice(0, 6);
+
+  const memberBalances = members.map(m => {
+    const mtxs  = txs.filter(t => t.member_id === m.id && !t.is_projected);
+    const income = mtxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const spent  = mtxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const net    = parseFloat(m.monthly_income ?? 0) + income - spent;
+    return { ...m, txIncome: income, txSpent: spent, net };
+  });
+
+  const spentPct = totalIncome > 0 ? Math.min(100, Math.round((totalSpent / totalIncome) * 100)) : 0;
+  const monthLabel = MONTHS_PT[month] + " " + year;
+
+  const fmtBig = (v) => Math.abs(v).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmtSm  = (v) => Math.abs(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  return (
+    <div style={{ padding: "32px 36px 64px", maxWidth: 1280, margin: "0 auto" }}>
+
+      {/* ── HERO ────────────────────────────────────── */}
+      <section style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22, marginBottom: 22 }}>
+
+        {/* Saldo heroico */}
+        <Card padded={false} style={{ padding: "28px 32px 30px", position: "relative", overflow: "hidden" }}>
+          <div style={{
+            position: "absolute", top: -60, right: -60, width: 260, height: 260,
+            background: "radial-gradient(circle, var(--auriz-gold-soft) 0%, transparent 65%)",
+            opacity: 0.7, pointerEvents: "none",
+          }} />
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
+            <span className="a-overline">{monthLabel}</span>
+            <Badge tone={balance >= 0 ? "sage" : "terra"} dot>{balance >= 0 ? "saldo positivo" : "saldo negativo"}</Badge>
+          </div>
+
+          {/* Número heroico — inline para tamanho máximo */}
+          <div style={{
+            fontFamily: "var(--font-display)", fontSize: 52, fontWeight: 800,
+            letterSpacing: "-2.5px", lineHeight: 1,
+            color: balance >= 0 ? "var(--ink)" : "var(--terracotta)",
+            fontVariantNumeric: "tabular-nums",
+            marginBottom: 20,
+          }}>
+            <span style={{ fontSize: 28, fontWeight: 600, color: "var(--ink-3)", marginRight: 4, letterSpacing: "-1px" }}>R$</span>
+            {fmtBig(balance)}
+          </div>
+
+          <div style={{ display: "flex", gap: 28 }}>
+            {[
+              { label: "Renda", value: totalIncome, color: "var(--sage)", sign: "+" },
+              { label: "Gasto", value: totalSpent,  color: "var(--terracotta)", sign: "−" },
+              { label: "Economias", value: savings, color: "var(--ink-2)", sign: "" },
+            ].map(({ label, value, color, sign }) => (
+              <div key={label}>
+                <div className="a-overline" style={{ marginBottom: 4 }}>{label}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 600, color, fontVariantNumeric: "tabular-nums" }}>
+                  {sign}R$ {fmtSm(value)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Transferência sugerida / status ok */}
+        {transfer && !transfer.is_settled ? (
+          <Card tone="gold" padded={false} style={{ padding: "28px 30px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <div className="a-overline" style={{ marginBottom: 10, color: "var(--auriz-gold-deep)" }}>Transferência sugerida</div>
+              <Money value={transfer.amount} size="lg" tone="gold" />
+              <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}>
+                <Avatar name={transfer.from_member?.name} color={transfer.from_member?.color ?? "gold"} size={26} />
+                <Icon.ArrowRight size={14} />
+                <Avatar name={transfer.to_member?.name} color={transfer.to_member?.color ?? "sage"} size={26} />
+                <span style={{ color: "var(--ink-2)" }}>
+                  de {transfer.from_member?.name?.split(" ")[0]} para {transfer.to_member?.name?.split(" ")[0]}
+                </span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <Button variant="ink" size="sm" onClick={async () => { await DB.settleTransfer(transfer.id); load(); }}>Registrar pagamento</Button>
+              <Button variant="ghost" size="sm">Como calcula?</Button>
+            </div>
+          </Card>
+        ) : (
+          <Card padded={false} style={{ padding: "28px 30px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, border: "1.5px dashed var(--hairline)" }}>
+            <Icon.CheckCircle size={28} style={{ color: "var(--sage)" }} />
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-2)" }}>
+              {transfer?.is_settled ? "Transferência quitada." : "Sem transferência este mês."}
+            </div>
+          </Card>
+        )}
+      </section>
+
+      {/* ── TILES RESUMO ─────────────────────────────── */}
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
+        <SummaryTile
+          label="Gasto do mês"
+          value={`R$ ${fmtBig(totalSpent)}`}
+          sub={`de R$ ${fmtBig(totalIncome)} · ${spentPct}%`}
+          barPct={spentPct}
+          barColor="var(--terracotta)"
+          valueColor="var(--terracotta)"
+        />
+        <SummaryTile
+          label="Economias"
+          value={`R$ ${fmtBig(savings)}`}
+          sub="acumulado este mês"
+          barPct={totalIncome > 0 ? Math.min(100, Math.round((savings / totalIncome) * 100)) : 0}
+          barColor="var(--teal)"
+          valueColor="var(--teal)"
+        />
+        <SummaryTile
+          label="Lançamentos"
+          value={String(visibleTxs.filter(t => !t.is_projected).length)}
+          sub={`${visibleTxs.filter(t => t.is_projected).length} projetados`}
+          barPct={null}
+          valueColor="var(--auriz-gold-deep)"
+        />
+      </section>
+
+      {/* ── BODY ─────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22 }}>
+
+        {/* Transações recentes */}
+        <Card padded={false}>
+          <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--hairline-soft)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div>
+              <h3 className="a-h3" style={{ margin: 0, fontSize: 18 }}>Transações recentes</h3>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-display)", marginTop: 2 }}>últimas {recentTxs.length} lançadas</div>
+            </div>
+            <button onClick={() => onNav("transacoes")} style={{
+              background: "transparent", border: "none", cursor: "pointer",
+              color: "var(--ink-2)", fontSize: 13, padding: 6,
+              display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans)",
+            }}>
+              Ver todas <Icon.ArrowRight size={12} />
+            </button>
+          </div>
+          {recentTxs.length === 0
+            ? <EmptyState icon="CreditCard" title="Nenhuma transação ainda."
+                description="Quando você adicionar a primeira, ela aparece aqui."
+                action={<Button variant="primary" size="sm" onClick={onAddTransaction} leading={<Icon.Plus size={14}/>}>Adicionar</Button>} />
+            : recentTxs.map((tx, i) => (
+                <DashTxRow key={tx.id + (tx.is_projected ? "_p" : "")} tx={tx} isLast={i === recentTxs.length - 1} onEdit={onEditTransaction} />
+              ))
+          }
+        </Card>
+
+        {/* Coluna direita */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+
+          {/* Tetos */}
+          <Card padded={false}>
+            <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--hairline-soft)" }}>
+              <h3 className="a-h3" style={{ margin: 0, fontSize: 18 }}>Tetos do mês</h3>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-display)", marginTop: 2 }}>categorias mais próximas do limite</div>
+            </div>
+            {topBudgets.length === 0
+              ? <EmptyState icon="TrendingUp" title="Nenhum teto configurado."
+                  action={<Button variant="ghost" size="sm" onClick={() => onNav("teto")}>Configurar</Button>} />
+              : <div style={{ padding: "16px 22px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  {topBudgets.map(b => <BudgetPulse key={b.category_id} budget={b} />)}
+                </div>
+            }
+          </Card>
+
+          {/* Saldo por membro */}
+          <Card padded={false}>
+            <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--hairline-soft)" }}>
+              <h3 className="a-h3" style={{ margin: 0, fontSize: 18 }}>Saldo por membro</h3>
+            </div>
+            <div style={{ padding: "16px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              {memberBalances.map(m => (
+                <div key={m.id}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <Avatar name={m.name} color={m.color} size={28} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 500 }}>{m.name.split(" ")[0]}</div>
+                      <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        Renda: R$ {parseFloat(m.monthly_income ?? 0).toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                    <MoneyMono value={m.net} tone={m.net >= 0 ? "sage" : "terra"} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    <div style={{ padding: "6px 10px", background: "var(--sage-soft)", borderRadius: "var(--r-1)" }}>
+                      <div style={{ fontSize: 10, color: "var(--sage)", fontWeight: 500, marginBottom: 1 }}>Renda mensal</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--sage)" }}>
+                        +R$ {parseFloat(m.monthly_income ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <div style={{ padding: "6px 10px", background: "var(--terracotta-soft)", borderRadius: "var(--r-1)" }}>
+                      <div style={{ fontSize: 10, color: "var(--terracotta)", fontWeight: 500, marginBottom: 1 }}>Despesas</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--terracotta)" }}>
+                        −R$ {m.txSpent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Insight IA */}
+          {insight && (
+            <Card tone="ink" style={{ borderColor: "var(--ink)", position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, color: "var(--auriz-gold)" }}>
+                <Icon.Sparkles size={14} />
+                <span className="a-overline" style={{ color: "var(--auriz-gold)", fontWeight: 500 }}>Nota do Auriz</span>
+              </div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 17, lineHeight: 1.35, margin: 0, color: "var(--paper)", letterSpacing: "-0.005em" }}>
+                {insight.content}
+              </p>
+              <div style={{ marginTop: 14 }}>
+                <button onClick={async () => { await DB.dismissInsight(insight.id); setInsight(null); }}
+                  style={{ background: "transparent", border: "none", color: "var(--ink-3)", padding: "6px 8px", borderRadius: "var(--r-2)", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+                  Dispensar
+                </button>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SummaryTile = ({ label, value, sub, barPct, barColor, valueColor }) => (
+  <div style={{
+    background: "var(--surface)", borderRadius: "var(--r-4)",
+    border: "1px solid var(--hairline)", padding: "18px 22px 0",
+    boxShadow: "var(--shadow-1)", position: "relative", overflow: "hidden",
+  }}>
+    <div className="a-overline" style={{ marginBottom: 10 }}>{label}</div>
+    <div style={{
+      fontSize: 26, fontWeight: 700, letterSpacing: "-0.8px", lineHeight: 1,
+      color: valueColor ?? "var(--ink)", fontVariantNumeric: "tabular-nums",
+      fontFamily: "var(--font-display)",
+    }}>{value}</div>
+    {sub && <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6, marginBottom: barPct != null ? 14 : 18 }}>{sub}</div>}
+    {barPct != null && (
+      <div style={{ height: 4, background: "var(--hairline)", marginTop: 14 }}>
+        <div style={{ height: "100%", width: `${barPct}%`, background: barColor, transition: "width .5s ease" }} />
+      </div>
+    )}
+    {barPct == null && <div style={{ height: 18 }} />}
+  </div>
+);
+
+const DashTxRow = ({ tx, isLast, onEdit }) => (
+  <div
+    onClick={() => onEdit?.(tx)}
+    style={{
+      display: "grid", gridTemplateColumns: "36px 1fr auto auto", gap: 14,
+      alignItems: "center", padding: "13px 22px",
+      borderBottom: isLast ? "none" : "1px solid var(--hairline-soft)",
+      cursor: onEdit ? "pointer" : "default",
+      background: tx.is_projected ? "var(--auriz-gold-soft)" : "transparent",
+      opacity: tx.is_projected ? 0.8 : 1,
+      transition: "background var(--dur-fast) var(--ease-out)",
+    }}
+    onMouseEnter={e => { if (onEdit) e.currentTarget.style.background = tx.is_projected ? "var(--auriz-gold)" : "var(--surface)"; }}
+    onMouseLeave={e => { e.currentTarget.style.background = tx.is_projected ? "var(--auriz-gold-soft)" : "transparent"; }}
+  >
+    <CategoryChip name={tx.category_name} icon={tx.category_icon} color={tx.category_color} />
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+        {tx.description}
+        {tx.is_projected && <span style={{ fontSize: 11, color: "var(--auriz-gold-deep)", fontStyle: "italic" }}>projetada</span>}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, display: "flex", gap: 8, alignItems: "center" }}>
+        <Avatar name={tx.member_name ?? "?"} color={tx.member_color ?? "gold"} size={18} />
+        <span>{tx.member_name?.split(" ")[0]}</span>
+        <span>·</span><span>{tx.method}</span>
+        {tx.installment_label && <Badge tone="neutral">{tx.installment_label}</Badge>}
+        {tx.is_shared && <Badge tone="teal">dividida</Badge>}
+      </div>
+    </div>
+    <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
+      {new Date(tx.transaction_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+    </div>
+    <MoneyMono value={tx.amount} tone={tx.amount > 0 ? "sage" : "terra"} />
+  </div>
+);
+
+const BudgetPulse = ({ budget }) => {
+  const pct  = parseFloat(budget.pct_used ?? 0);
+  const tone = budget.status === "over" ? "over" : budget.status === "warn" ? "warn" : "ok";
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 7 }}>
+        <CategoryChip name={budget.category_name} icon={budget.category_icon} color={budget.category_color} size={26} />
+        <span style={{ fontSize: 14, fontWeight: 500, flex: 1 }}>{budget.category_name}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--ink-2)", fontVariantNumeric: "tabular-nums" }}>
+          R$ {parseFloat(budget.spent ?? 0).toLocaleString("pt-BR")}
+          <span style={{ color: "var(--ink-3)" }}> / {parseFloat(budget.limit_amount).toLocaleString("pt-BR")}</span>
+        </span>
+      </div>
+      <ProgressBar pct={pct} tone={tone} />
+    </div>
+  );
+};
+
+window.DashboardScreen = DashboardScreen;
