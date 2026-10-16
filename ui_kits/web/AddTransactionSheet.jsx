@@ -328,16 +328,16 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
                 <Select label="Pagamento" value={method} onChange={e => setMethod(e.target.value)}
                   options={[{value:"PIX",label:"PIX"},{value:"Cartão",label:"Cartão"},{value:"Dinheiro",label:"Dinheiro"}]} />
               </div>
-              {txType === "parcela" && (
+              {(txType === "parcela" || txType === "renda") && (
                 <div style={{ marginTop: 14 }}>
-                  <Input label="Número de parcelas" type="number" min="2" max="60" value={installments} onChange={e => setInstallments(e.target.value)} />
+                  <Input label={txType === "renda" ? "Parcelas a receber (1 = recebimento único)" : "Número de parcelas"} type="number" min={txType === "renda" ? "1" : "2"} max="60" value={installments} onChange={e => setInstallments(e.target.value)} />
                 </div>
               )}
               <div style={{ display: "flex", gap: 10, marginTop: 18, marginBottom: 4 }}>
                 {txType !== "recorrente" && (
                   <ToggleRow label="Dividir 50/50" sub="Uma tx por pessoa." on={shared} onChange={() => { setShared(s => !s); setShareWithId(""); }} />
                 )}
-                {txType !== "parcela" && (
+                {txType !== "parcela" && !(txType === "renda" && parseInt(installments) > 1) && (
                   <ToggleRow label="Recorrente" sub="Repete todo mês." on={recurring} onChange={() => setRecurring(!recurring)} />
                 )}
               </div>
