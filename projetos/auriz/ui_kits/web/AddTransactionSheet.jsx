@@ -159,7 +159,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
 
     return (
       <div onClick={onClose} style={sheetBody}>
-        <form onSubmit={handleSubmit} onClick={e => e.stopPropagation()} style={{ ...formStyle, padding: "28px 36px 32px", overflowY: "auto" }}>
+        <form onSubmit={handleSubmit} onClick={e => e.stopPropagation()} style={{ ...formStyle, padding: "28px 36px 32px", overflowY: "auto", overflowX: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
             <div>
               <div style={{ marginBottom: 8 }}>
@@ -250,7 +250,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
         </div>
 
         {/* Body scrollável */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 8px" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "28px 28px 8px" }}>
 
           {/* Step 0: Tipo */}
           {step === 0 && (
@@ -273,13 +273,13 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
           {/* Step 1: Valor + membro */}
           {step === 1 && (
             <>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8, background: "var(--surface)", border: `2px solid ${amount ? "var(--auriz-gold)" : "var(--hairline)"}`, borderRadius: "var(--r-3)", padding: "18px 22px", marginBottom: 22, transition: "border-color .15s" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, background: "var(--surface)", border: `2px solid ${amount ? "var(--auriz-gold)" : "var(--hairline)"}`, borderRadius: "var(--r-3)", padding: "18px 22px", marginBottom: 22, transition: "border-color .15s", minWidth: 0 }}>
                 <span style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--ink-3)" }}>R$</span>
                 <input
                   autoFocus
                   value={amount} onChange={e => setAmount(e.target.value)}
                   placeholder="0" inputMode="decimal"
-                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-display)", fontSize: 44, color: "var(--ink)", fontVariantNumeric: "tabular-nums lining-nums", letterSpacing: "-0.045em", padding: 0, lineHeight: 1 }}
+                  style={{ flex: 1, minWidth: 0, width: "100%", border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-display)", fontSize: 44, color: "var(--ink)", fontVariantNumeric: "tabular-nums lining-nums", letterSpacing: "-0.045em", padding: 0, lineHeight: 1 }}
                 />
               </div>
               <div className="a-overline" style={{ marginBottom: 10 }}>De quem é</div>
@@ -432,7 +432,7 @@ const AmountRow = ({ amount, onChange }) => (
     <div className="a-overline" style={{ marginBottom: 8 }}>Valor total</div>
     <div style={{ display: "flex", alignItems: "baseline", gap: 8, background: "#fff", border: "1px solid var(--hairline)", borderRadius: "var(--r-3)", padding: "18px 22px" }}>
       <span style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--ink-3)" }}>R$</span>
-      <input value={amount} onChange={onChange} placeholder="0" inputMode="decimal" style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-display)", fontSize: 44, color: "var(--ink)", fontVariantNumeric: "tabular-nums lining-nums", letterSpacing: "-0.045em", padding: 0, lineHeight: 1 }} />
+      <input value={amount} onChange={onChange} placeholder="0" inputMode="decimal" style={{ flex: 1, minWidth: 0, width: "100%", border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-display)", fontSize: 44, color: "var(--ink)", fontVariantNumeric: "tabular-nums lining-nums", letterSpacing: "-0.045em", padding: 0, lineHeight: 1 }} />
     </div>
   </div>
 );
