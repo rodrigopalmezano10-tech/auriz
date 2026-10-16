@@ -87,10 +87,10 @@ const DB = {
     return await API.fetch(`/transactions?familyId=${familyId}&month=${month}&year=${year}`);
   },
 
-  async addTransaction({ familyId, memberId, categoryId, description, amount, date, method, isShared, isRecurring, installmentCurrent, installmentTotal, notes }) {
+  async addTransaction({ familyId, memberId, categoryId, description, amount, date, method, isShared, isRecurring, installmentCurrent, installmentTotal, notes, isDeleted }) {
     return await API.fetch('/transactions', {
       method: 'POST',
-      body: JSON.stringify({ familyId, memberId, categoryId, description, amount, date, method, isShared, isRecurring, installmentCurrent, installmentTotal, notes }),
+      body: JSON.stringify({ familyId, memberId, categoryId, description, amount, date, method, isShared, isRecurring, installmentCurrent, installmentTotal, notes, isDeleted }),
     });
   },
 

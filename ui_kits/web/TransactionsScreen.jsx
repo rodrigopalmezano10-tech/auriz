@@ -19,11 +19,25 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
 
   const handleDelete = async (id, isProjected) => {
     const msg = isProjected
-      ? "Remover esta recorrente? Ela não será mais projetada nos próximos meses."
+      ? "Remover esta recorrente? Ela não será mais gerada a partir deste mês."
       : "Remover esta transação?";
     if (!confirm(msg)) return;
     setDeleting(id);
-    try { await DB.softDeleteTransaction(id); showToast("Removido."); load(); }
+    try {
+      if (isProjected) {
+        const tx = txs.find(t => t.id === id && t.is_projected);
+        await DB.addTransaction({
+          familyId, memberId: tx.member_id, categoryId: tx.category_id, description: tx.description,
+          amount: tx.amount, date: tx.transaction_date, method: tx.method ?? "PIX",
+          isShared: !!tx.is_shared, isRecurring: !!tx.is_recurring,
+          installmentCurrent: tx.installment_current, installmentTotal: tx.installment_total,
+          isDeleted: true,
+        });
+      } else {
+        await DB.softDeleteTransaction(id);
+      }
+      showToast("Removido."); load();
+    }
     catch { showToast("Não foi possível remover.", "error"); }
     finally { setDeleting(null); }
   };
@@ -39,8 +53,10 @@ const TransactionsScreen = ({ familyId, month, year, members, categories, viewMe
         amount: tx.amount,
         date: tx.transaction_date,
         method: tx.method ?? "PIX",
-        isShared: false,
-        isRecurring: false,
+        isShared: !!tx.is_shared,
+        isRecurring: !!tx.is_recurring,
+        installmentCurrent: tx.installment_current,
+        installmentTotal: tx.installment_total,
       });
       showToast("Transação efetivada.");
       load();
