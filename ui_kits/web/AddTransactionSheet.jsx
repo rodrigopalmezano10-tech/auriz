@@ -8,7 +8,20 @@ const TX_TYPES = [
   { id: "recorrente", label: "Recorrente", emoji: "🔄", sub: "Mensal, anual…" },
 ];
 
+const useIsMobile = (max = 640) => {
+  const q = `(max-width: ${max}px)`;
+  const [m, setM] = React.useState(() => window.matchMedia(q).matches);
+  React.useEffect(() => {
+    const mq = window.matchMedia(q);
+    const h = () => setM(mq.matches);
+    mq.addEventListener("change", h);
+    return () => mq.removeEventListener("change", h);
+  }, [q]);
+  return m;
+};
+
 const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onSaved, editTx }) => {
+  const isMobile = useIsMobile();
   const [step, setStep]             = React.useState(0);
   const [txType, setTxType]         = React.useState("despesa");
   const [memberId, setMemberId]     = React.useState(members[0]?.id ?? "");
@@ -145,10 +158,10 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
     animation: "auriz-fade 220ms var(--ease-out)",
   };
   const formStyle = {
-    background: "var(--paper)", width: "100%", maxWidth: 640,
+    background: "var(--paper)", width: "100%", maxWidth: isMobile ? "100%" : 640,
     borderRadius: "var(--r-4) var(--r-4) 0 0", boxShadow: "var(--shadow-3)",
     animation: "auriz-slide 280ms var(--ease-out)",
-    maxHeight: "92vh", display: "flex", flexDirection: "column", overflow: "hidden",
+    maxHeight: isMobile ? "94dvh" : "92vh", display: "flex", flexDirection: "column", overflow: "hidden",
   };
 
   /* ── EDIT / CONFIRM: forma tradicional (sem steps) ── */
@@ -159,7 +172,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
 
     return (
       <div onClick={onClose} style={sheetBody}>
-        <form onSubmit={handleSubmit} onClick={e => e.stopPropagation()} style={{ ...formStyle, padding: "28px 36px 32px", overflowY: "auto", overflowX: "hidden" }}>
+        <form onSubmit={handleSubmit} onClick={e => e.stopPropagation()} style={{ ...formStyle, padding: isMobile ? "20px 18px calc(20px + env(safe-area-inset-bottom, 0px))" : "28px 36px 32px", overflowY: "auto", overflowX: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
             <div>
               <div style={{ marginBottom: 8 }}>
@@ -177,12 +190,12 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
           <MemberRow members={members} memberId={memberId} onSelect={() => {}} disabled={isEditing} />
           <AmountRow amount={amount} onChange={e => setAmount(e.target.value)} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.4fr 1fr", gap: 14, marginBottom: 16 }}>
             <Input label="Descrição" placeholder="ex: Pão de Açúcar · Compras" value={description} onChange={e => setDescription(e.target.value)} required />
             <Select label="Categoria" value={categoryId} onChange={e => setCategoryId(e.target.value)}
               options={categories.filter(c => !!c.is_income === !isExpense).map(c => ({ value: c.id, label: c.name }))} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
             <Input label="Data" type="date" value={date} onChange={e => setDate(e.target.value)} />
             <Select label="Pagamento" value={method} onChange={e => setMethod(e.target.value)}
               options={[{value:"PIX",label:"PIX"},{value:"Cartão",label:"Cartão"},{value:"Dinheiro",label:"Dinheiro"}]} />
@@ -194,7 +207,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
 
           {error && <div style={{ fontSize: 13, color: "var(--terracotta)", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}><Icon.AlertCircle size={14} /> {error}</div>}
 
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
             {isEditing && (
               <button type="button" onClick={handleDelete} disabled={loading} style={{ marginRight: "auto", background: "transparent", border: "none", cursor: "pointer", color: "var(--terracotta)", display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontFamily: "var(--font-sans)", padding: "6px 2px" }}>
                 <Icon.Trash2 size={14} /> Excluir
@@ -232,7 +245,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
       <div onClick={e => e.stopPropagation()} style={formStyle}>
 
         {/* Header com dots */}
-        <div style={{ padding: "22px 28px 18px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+        <div style={{ padding: isMobile ? "16px 16px 14px" : "22px 28px 18px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
           <button onClick={prevStep} style={{ width: 32, height: 32, borderRadius: "var(--r-2)", border: "1px solid var(--hairline)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-2)", fontSize: 16 }}>
             ‹
           </button>
@@ -250,7 +263,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
         </div>
 
         {/* Body scrollável */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "28px 28px 8px" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: isMobile ? "20px 16px 8px" : "28px 28px 8px" }}>
 
           {/* Step 0: Tipo */}
           {step === 0 && (
@@ -279,7 +292,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
                   autoFocus
                   value={amount} onChange={e => setAmount(e.target.value)}
                   placeholder="0" inputMode="decimal"
-                  style={{ flex: 1, minWidth: 0, width: "100%", border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-display)", fontSize: 44, color: "var(--ink)", fontVariantNumeric: "tabular-nums lining-nums", letterSpacing: "-0.045em", padding: 0, lineHeight: 1 }}
+                  style={{ flex: 1, minWidth: 0, width: "100%", border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-display)", fontSize: isMobile ? 34 : 44, color: "var(--ink)", fontVariantNumeric: "tabular-nums lining-nums", letterSpacing: "-0.045em", padding: 0, lineHeight: 1 }}
                 />
               </div>
               <div className="a-overline" style={{ marginBottom: 10 }}>De quem é</div>
@@ -303,7 +316,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
 
           {/* Step 2: Categoria em grid */}
           {step === 2 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(4, 1fr)", gap: 10 }}>
               {filteredCats.map(c => (
                 <button key={c.id} type="button" onClick={() => { setCategoryId(c.id); nextStep(); }} style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
@@ -323,7 +336,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
           {step === 3 && (
             <>
               <Input label="Descrição" placeholder="ex: Compras da semana no Extra…" value={description} onChange={e => setDescription(e.target.value)} required />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginTop: 16 }}>
                 <Input label="Data" type="date" value={date} onChange={e => setDate(e.target.value)} />
                 <Select label="Pagamento" value={method} onChange={e => setMethod(e.target.value)}
                   options={[{value:"PIX",label:"PIX"},{value:"Cartão",label:"Cartão"},{value:"Dinheiro",label:"Dinheiro"}]} />
@@ -333,7 +346,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
                   <Input label={txType === "renda" ? "Parcelas a receber (1 = recebimento único)" : "Número de parcelas"} type="number" min={txType === "renda" ? "1" : "2"} max="60" value={installments} onChange={e => setInstallments(e.target.value)} />
                 </div>
               )}
-              <div style={{ display: "flex", gap: 10, marginTop: 18, marginBottom: 4 }}>
+              <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 10, marginTop: 18, marginBottom: 4 }}>
                 {txType !== "recorrente" && (
                   <ToggleRow label="Dividir 50/50" sub="Uma tx por pessoa." on={shared} onChange={() => { setShared(s => !s); setShareWithId(""); }} />
                 )}
@@ -388,7 +401,7 @@ const AddTransactionSheet = ({ open, onClose, familyId, members, categories, onS
 
         {/* Footer — oculto no step 0 (clique no card já avança) */}
         {step > 0 && (
-          <div style={{ padding: "16px 28px 24px", borderTop: "1px solid var(--hairline)", display: "flex", gap: 10, flexShrink: 0 }}>
+          <div style={{ padding: isMobile ? "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))" : "16px 28px 24px", borderTop: "1px solid var(--hairline)", display: "flex", gap: 10, flexShrink: 0 }}>
             <Button variant="ghost" type="button" style={{ flex: 1 }} onClick={prevStep}>Voltar</Button>
             <Button variant="primary" type="button" style={{ flex: 2 }} disabled={loading} onClick={handleNext}
               trailing={loading ? <Spinner size={15} /> : null}>
